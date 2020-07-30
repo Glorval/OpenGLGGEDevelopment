@@ -37,8 +37,8 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 		Returns.fulldata = 1;
 		Returns.indices = indices;
 		Returns.vertices = vertices;
-		Returns.vertsize = vertSize;
-		Returns.indsize = indSize;
+		Returns.vertsize = vertSize/sizeof(float);
+		Returns.indsize = indSize/sizeof(float);
 	}
 
 	return(Returns);
@@ -52,9 +52,9 @@ struct ShapeData createShapeFromFile(char vertFile[], char indFile[], int saveAl
 	char vertFileFixed[100] = "Objects/";
 	char indFileFixed[100] = "Objects/";
 	strcat(vertFileFixed, vertFile);
-	strcat(vertFileFixed, "/Vertices.txt");
+	strcat(vertFileFixed, "Vertices.txt");
 	strcat(indFileFixed, indFile);
-	strcat(indFileFixed, "/Indices.txt");
+	strcat(indFileFixed, "Indices.txt");
 
 	//Vertex reading
 	FILE* verts = fopen(vertFileFixed, "r");
@@ -151,13 +151,31 @@ void saveShapeToFile(float vertices[], unsigned int indices, int vertSize, int i
 
 //Saves given shape to filen, shape given by a shape structure.
 void saveShapeToFileStruct(struct ShapeData SaveShape) {
-	char* token;
-	printf("%s", &SaveShape.filename);
+
 	char vertFile[100] = "Objects/";//Get to the right directory
 	strcat(vertFile, &SaveShape.filename);//Put the name of the file as the folder name
-	strcat(vertFile, "/Vertices.txt");//All vertice files are named this
+	strcat(vertFile, "Vertices.txt");//All vertice files are named this
 	FILE* vertSaveFile = fopen(vertFile, "w");//The place being written to is OurProgram/Objects/Filename/Vertices.txt
 
-	fputs(SaveShape.vertices, vertFile);
+	for(int counter = 0; counter < SaveShape.vertsize; counter++){
+		fprintf(vertSaveFile, "%f", SaveShape.vertices[counter]);
+		if (counter != SaveShape.vertsize - 1) {
+			fprintf(vertSaveFile, " ");
+		}
+	}
 
+	char indFile[100] = "Objects/";//Get to the right directory
+	strcat(indFile, &SaveShape.filename);//Put the name of the file as the folder name
+	strcat(indFile, "Indices.txt");//All vertice files are named this
+	FILE* indSaveFile = fopen(indFile, "w");//The place being written to is OurProgram/Objects/Filename/Vertices.txt
+
+	for (int counter = 0; counter < SaveShape.indsize; counter++) {
+		fprintf(indSaveFile, "%u", SaveShape.indices[counter]);
+		if (counter != SaveShape.indsize - 1) {
+			fprintf(indSaveFile, " ");
+		}
+	}
+
+
+	fclose(indSaveFile);
 }

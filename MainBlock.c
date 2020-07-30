@@ -10,7 +10,10 @@
 #define LENGTHOF(x)  (sizeof(x) / sizeof((x)[0]))
 #define pi 3.14
 
-
+struct mousedata {
+    double xposOnClick;
+    double yposOnClick;
+};
 
 
 
@@ -20,7 +23,15 @@ void inputProc(GLFWwindow* window) {
     }
 }
 
-
+void mouseInteraction(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        double xpos, ypos;
+        xpos = 0;
+        ypos = 0;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        printf("%f, %f\n", xpos, ypos);
+    }
+}
 
 
 
@@ -39,6 +50,14 @@ int main()
     strcpy(&shapeOne.filename, "Test");
     saveShapeToFileStruct(shapeOne);
     printf("Time taken to Final End of Setup %f\n", glfwGetTime());
+
+
+
+
+
+    glfwSetMouseButtonCallback(window, mouseInteraction);
+
+
     //END OF SETUP
 
 
@@ -116,8 +135,8 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        float finishtime = glfwGetTime();
-        printf("Time For Frame %f\n", finishtime - time);
+        //float finishtime = glfwGetTime();
+        //printf("Time For Frame %f\n", finishtime - time);
     }
 
 
