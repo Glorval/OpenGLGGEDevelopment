@@ -7,31 +7,86 @@
 #include <math.h>
 #include "GlorvGEV1/GlorvGE_BaseV1.h"
 
-#define LENGTHOF(x)  (sizeof(x) / sizeof((x)[0]))
+
+//#define LENGTHOF(x)  (sizeof(x) / sizeof((x)[0]))
 #define pi 3.14
 
-struct mousedata {
-    double xposOnClick;
-    double yposOnClick;
+
+
+
+
+
+struct consoleReturns {
+    struct ShapeData consoleShape;
+    int returningShape;
 };
 
 
 
-void inputProc(GLFWwindow* window) {
+//Used to send input data
+struct inputReturns {
+    int success;
+    struct MouseData mouseInput;
+};
+
+
+
+
+
+
+
+
+GLFWwindow* window;
+
+
+
+
+
+
+struct inputReturns inputProc() {
+    struct inputReturns returnData;
+    returnData.success = 1;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, 1);
     }
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == 1) {
+        glfwGetCursorPos(window, &returnData.mouseInput.xposOnClick, &returnData.mouseInput.yposOnClick);
+        printf("click\n");
+        //returnData.mouseInput.processingClick;
+    }
+
+    return(returnData);
 }
 
-void mouseInteraction(GLFWwindow* window, int button, int action, int mods) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        double xpos, ypos;
-        xpos = 0;
-        ypos = 0;
-        glfwGetCursorPos(window, &xpos, &ypos);
-        printf("%f, %f\n", xpos, ypos);
+
+
+
+
+struct consoleReturns consoleInput(char input[100], struct mainloopData* alldata) {//Accepts user input and goes down a tree to find out what the hell we're doing
+    struct consoleReturns Returns;
+    if (strstr(input, "create") != NULL) {//Create tree
+
+
+        if (strstr(input, "shape")) {//Creating a shape
+            Returns.consoleShape = drawShape(window, *alldata);
+            Returns.returningShape = 1;
+        }
+
+
+        //end of create tree
+
     }
+    else {
+        Returns.returningShape = 0;
+    }
+
+    return(Returns);
 }
+
+
+//The main loop of the program but in function form wauw, needed it this way to not go INSANE when trying to register clicks
+//Waiting on console stops the program and waits for input, loaded shapes is all shapes loaded currently, index count is how many indices to render, process input elsewhere disables the processing of input in here
+//struct mainloopData mainLoop(struct mainloopData mainData);
 
 
 
@@ -40,71 +95,54 @@ void mouseInteraction(GLFWwindow* window, int button, int action, int mods) {
 int main()
 {
    //SETUP
-    GLFWwindow* window = NULL;
+    window = NULL;
     window = setupEVERYTHING(window);
 
 
     
-    struct ShapeData shapeOne = createShapeFromFile("RectOne", "RectOne", 1);
+    /*struct ShapeData shapeOne = createShapeFromFile("RectOne", "RectOne", 1);
     shapeOne.filename = calloc(50, sizeof(char));
     strcpy(&shapeOne.filename, "Test");
-    saveShapeToFileStruct(shapeOne);
+    saveShapeToFileStruct(shapeOne);*/
     printf("Time taken to Final End of Setup %f\n", glfwGetTime());
 
 
 
 
 
-    glfwSetMouseButtonCallback(window, mouseInteraction);
+   
+
+    
 
 
     //END OF SETUP
-
-
-    //float vertices[] = {
-    //     0.25,  0.5, 0.0, 0.0, 1.0, 0.0, // top right
-    //     0.5, -0.5, 0.0, 0.0, 1.0, 0.0,   // bottom right
-    //    -0.5, -0.5, 0.0, 0.0, 1.0, 0.0,  // bottom left
-    //    -0.5,  0.5, 0.0,  0.0, 1.0, 1.0  // top left 
-    //};
-    //unsigned int indices[] = {  // note that we start from 0!
-    //    0, 1, 3,   // first triangle
-    //    1, 2, 3    // second triangle
-    //};
-
-    //CREATE OBJECT CODE
-    //struct ShapeData shapeOne;
-    //shapeOne = createShape(vertices, indices, sizeof(vertices), sizeof(indices));
-
-
-
-
-
-
+    
+    struct mainloopData alldata;
+    alldata.AllLoadedShapes = malloc(sizeof(struct ShapeData));
+    alldata.sizeofshapes = 0;
+    alldata.proecessinputelsewhere = 0;
+    alldata.totalindices = 0;
+    alldata.totalshapes = 0;
+    alldata.waitingonconsole = 1;
     while (!glfwWindowShouldClose(window)) {
-        float time = glfwGetTime();
-        inputProc(window);//Process input
+        alldata = mainLoop(alldata);
+        alldata.waitingonconsole = 0;
+    }
 
-        //RENDERING
-
-        //Clear previous
-
-        glClearColor(0.5, 0.0, 0.0, 0.0);
-        glClear(GL_COLOR_BUFFER_BIT);
-        //End of clearing
+    //debug test area
 
 
-        //DRAW EVERYTHING
 
-        //glBindVertexArray(VAO);
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //glBindVertexArray(0);
 
-        glBindVertexArray(shapeOne.VAO);
+    //glfwSwapBuffers(window);
+    //end of debug test area
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        //END OF DRAWING EVERYTHING
+    //End
+    
+    //scanf("%f", window);
+    glfwTerminate();
+    return 0;
+}
 
 
 
@@ -113,30 +151,42 @@ int main()
 
 
 
-
-        glBindBuffer(GL_ARRAY_BUFFER, shapeOne.VBO);
-        int position = 0;
-        shapeOne.vertices[0] = shapeOne.vertices[0] + (sin(time+pi)*.01);
-        glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*position, sizeof(float), &shapeOne.vertices[0]);
-
-
-
-
-
-
-
-
-        //END OF RENDERING
-
-
-
-   
-
-        glfwSwapBuffers(window);
+struct mainloopData mainLoop(struct mainloopData mainData) {
+    float timeAtStart = glfwGetTime();
+    if (mainData.proecessinputelsewhere == 0) {//Process current input IF WE ARE ALLOWED
+        inputProc(window);
         glfwPollEvents();
+    }
 
-        //float finishtime = glfwGetTime();
-        //printf("Time For Frame %f\n", finishtime - time);
+    glClearColor(0.0, 0.1, 0.9, 0.5);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+
+    //glBindBuffer(GL_ARRAY_BUFFER, 0);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    //glBindVertexArray(0);
+
+    
+    glBindVertexArray(mainData.AllLoadedShapes[0].VAO);
+    //GL_TRIANGLE_FAN
+    glDrawElements(GL_TRIANGLE_STRIP, mainData.totalindices, GL_UNSIGNED_INT, 0);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 0, mainData.totalindices);
+    glfwSwapBuffers(window);
+
+
+    char userInput[100];
+    //memset(userInput, "\0", 100);
+    if (mainData.waitingonconsole == 1) {
+        mainData.waitingonconsole = 0;
+        gets(userInput);
+        struct consoleReturns consoledata = consoleInput(userInput, &mainData);
+        /*if (consoledata.returningShape == 1) {
+            mainData.sizeofshapes += sizeof(struct ShapeData);
+            mainData.totalshapes++;
+            mainData.AllLoadedShapes = realloc(mainData.AllLoadedShapes, mainData.sizeofshapes);
+            mainData.AllLoadedShapes[mainData.totalshapes - 1] = consoledata.consoleShape;
+            mainData.totalindices = consoledata.consoleShape.indsize/sizeof(unsigned int);
+        }*/
     }
 
 
@@ -148,8 +198,8 @@ int main()
 
 
 
-
-    //End
-    glfwTerminate();
-    return 0;
+    //printf("Time for frame: %f\n", glfwGetTime() - timeAtStart);
+    return(mainData);
 }
+
+

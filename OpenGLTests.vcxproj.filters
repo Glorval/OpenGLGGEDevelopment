@@ -7,9 +7,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MainBlock.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -17,6 +14,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GlorvGEV1\GlorvShapesV1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainBlock.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -2,6 +2,19 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "GlorvGE_BaseV1.h"
 
+extern int Window_X = 1440;
+extern int Window_Y = 1080;
+
+
+
+
+
+
+
+
+
+
+
 struct ShaderStrings getShaderStrings() {
 
 
@@ -112,7 +125,6 @@ void setupShaders() {
 
 
 
-
 GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
 	float SetupTime = 0;
 	//Load GLAD
@@ -129,7 +141,7 @@ GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
 
 
 	//make a window
-	window = glfwCreateWindow(800, 600, "OpenGLTests", NULL, NULL);
+	window = glfwCreateWindow(Window_X, Window_Y, "OpenGLTests", NULL, NULL);
 	glfwMakeContextCurrent(window);
 	//end of making the window
 
@@ -139,9 +151,10 @@ GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
 
 
 	//Set the viewport
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, Window_X, Window_Y);
 	//
 	setupShaders();
 	printf("Time taken to setup within SetupEverything = %f\n", glfwGetTime());
 	return(window);
 }
+
