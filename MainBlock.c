@@ -80,6 +80,8 @@ struct consoleReturns consoleInput(char input[100], struct mainloopData* alldata
         Returns.returningShape = 0;
     }
 
+
+
     return(Returns);
 }
 
@@ -158,20 +160,33 @@ struct mainloopData mainLoop(struct mainloopData mainData) {
         glfwPollEvents();
     }
 
-    glClearColor(0.0, 0.1, 0.9, 0.5);
-    glClear(GL_COLOR_BUFFER_BIT);
-
+   
 
     //glBindBuffer(GL_ARRAY_BUFFER, 0);
     //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     //glBindVertexArray(0);
 
-    
-    glBindVertexArray(mainData.AllLoadedShapes[0].VAO);
+        
     //GL_TRIANGLE_FAN
-    glDrawElements(GL_TRIANGLE_STRIP, mainData.totalindices, GL_UNSIGNED_INT, 0);
+
+    for(int counter = 0; counter < mainData.totalshapes; counter ++){
+
+        glBindVertexArray(mainData.AllLoadedShapes[counter].VAO);
+        glDrawElements(GL_TRIANGLE_STRIP, mainData.totalindices, GL_UNSIGNED_INT, mainData.AllLoadedShapes[counter].indices);
+
+    }
+
+
+
+    //glBindVertexArray(0);
     //glDrawArrays(GL_TRIANGLE_STRIP, 0, mainData.totalindices);
     glfwSwapBuffers(window);
+
+
+    glClearColor(0.0, 0.1, 0.9, 0.5);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+
 
 
     char userInput[100];
@@ -180,18 +195,14 @@ struct mainloopData mainLoop(struct mainloopData mainData) {
         mainData.waitingonconsole = 0;
         gets(userInput);
         struct consoleReturns consoledata = consoleInput(userInput, &mainData);
-        /*if (consoledata.returningShape == 1) {
-            mainData.sizeofshapes += sizeof(struct ShapeData);
+        if (consoledata.returningShape == 1) {
+            mainData.sizeofshapes += consoledata.consoleShape.vertsize + consoledata.consoleShape.indsize + sizeof(struct ShapeData);
             mainData.totalshapes++;
             mainData.AllLoadedShapes = realloc(mainData.AllLoadedShapes, mainData.sizeofshapes);
             mainData.AllLoadedShapes[mainData.totalshapes - 1] = consoledata.consoleShape;
             mainData.totalindices = consoledata.consoleShape.indsize/sizeof(unsigned int);
-        }*/
+        }
     }
-
-
-
-
 
 
 

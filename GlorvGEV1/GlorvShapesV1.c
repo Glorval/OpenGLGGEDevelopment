@@ -3,7 +3,8 @@
 #define WINDOW_X 1440
 #define WINDOW_Y 1080
 
-
+#define VERTEX_SIZE 6 * sizeof(float)//The size in bytes of a vertex, currently 6 because x/y/z r/g/b
+#define IND_SIZE 1 * sizeof(unsigned int)
 
 
 
@@ -39,9 +40,10 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 		Returns.vertsize = vertSize;
 		Returns.indsize = indSize;
 	}
-	
+
 	return(Returns);
 }
+
 
 
 //struct ShapeData createVertShape(float vertices[], int vertSize) {
@@ -235,70 +237,314 @@ void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 
 
 
+//struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
+//	printf("Now drawing a shape.");
+//	float* vertices = calloc(1, sizeof(float));
+//	unsigned int* indices = calloc(1, sizeof(unsigned int));
+//
+//	int points = 0;
+//	struct MouseData drawingdata;
+//
+//	int stillDrawing = 1;
+//
+//	glfwSetMouseButtonCallback(window, drawShapeCallback);
+//	struct ShapeData returnshape;
+//	returnshape.vertices = calloc(1, sizeof(float));
+//	returnshape.indices = calloc(1, sizeof(unsigned int));
+//
+//	while (stillDrawing) {
+//		if (points > 3) {
+//			glBindVertexArray(returnshape.VAO);
+//			glBindBuffer(GL_ARRAY_BUFFER, returnshape.VBO);
+//			
+//		}
+//		if (processingClick == 1) {//we have a click
+//			processingClick = 0;
+//			points++;
+//
+//			double xpos, ypos;//We had a click so get the x/y
+//			glfwGetCursorPos(window, &xpos, &ypos);
+//			printf("%f, %f\n", xpos, ypos);
+//
+//			returnshape.vertices = realloc(returnshape.vertices, (points * sizeof(float)) * 7);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
+//			returnshape.indices = realloc(returnshape.indices, sizeof(unsigned int) * points);//Give more memory to this too to store the next indice
+//
+//			//start to store all the new data, for now just make the shape red
+//			returnshape.vertices[(points - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+//			returnshape.vertices[((points - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);
+//			returnshape.vertices[((points - 1) * 6) + 2] = 0;
+//			returnshape.vertices[((points - 1) * 6) + 3] = 0;
+//			returnshape.vertices[((points - 1) * 6) + 4] = 0.5;
+//			returnshape.vertices[((points - 1) * 6) + 5] = 0.0;
+//
+//			returnshape.indices[points - 1] = points - 1;//Indices just have to go 0->the last one
+//
+//
+//			printf("\n\n\n");
+//			for (int counter = 0; counter < points; counter++) {
+//				printf("%f, %f \n", returnshape.vertices[counter * 6], returnshape.vertices[(counter + 1) * 6]);
+//			}
+//			printf("\n\n\n");
+//
+//		}
+//		else if (processingClick == 2) {//2 is to end
+//			stillDrawing = 0;
+//		}
+//		
+//		if (points == 3) {
+//			returnshape = createShape(vertices, indices, points * sizeof(float) * 6, (points) * sizeof(unsigned int), 1);
+//		}
+//		
+//		
+//		
+//		if (points > 3) {
+//			glDrawElements(GL_TRIANGLE_STRIP, points, GL_UNSIGNED_INT, returnshape.indices);
+//		}
+//		
+//
+//		
+//		
+//
+//		maindata.proecessinputelsewhere = 1;
+//		glfwPollEvents();
+//
+//
+//		maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
+//
+//
+//
+//
+//		/*if (points > 3) {
+//			returnshape.vertices = vertices;
+//			returnshape.indices = indices;
+//			glBindVertexArray(returnshape.VAO);
+//			
+//
+//			glDrawElements(GL_TRIANGLE_STRIP, points, GL_UNSIGNED_INT, indices);
+//			glBindVertexArray(0);
+//		}*/
+//	}
+//
+//
+//	returnshape.indices = realloc(returnshape.indices, sizeof(unsigned int) * (points + 2));
+//	returnshape.indices[points] = 0;
+//	returnshape.indices[points + 1] = 1;
+//
+//
+//	//Now done with creating all the vertices for the shape, so turn it into a shape object
+//	//struct ShapeData returnshape = createShape(vertices, indices, points * sizeof(float) * 6, (points + 2) * sizeof(unsigned int), 1);
+//	
+//
+//	
+//	glBindVertexArray(0);
+//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+//	printf("Done\n");
+//	return(returnshape);
+//
+//
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Plan for how it will work: Get all the vertices while rendering them as points, then the user clicks on pairs of 3 vertices to connect them as a triangle.  
+//Lastly the user should be able to click a vertex and then have it follow the mouse until they click again, and a way to switch between these 3 modes of 'vector creation' 'vector connection' and 'vector changing'
 struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	printf("Now drawing a shape.");
-	float* vertices = calloc(1, sizeof(float));
-	unsigned int* indices = calloc(1, sizeof(unsigned int));
 
+
+
+	//USED FOR VERTEX CREATION
 	int points = 0;
-	struct MouseData drawingdata;
+	float* vertices;//to store the vertices in easily
+	int* indices;//same
 
-	int stillDrawing = 1;
-
-	glfwSetMouseButtonCallback(window, drawShapeCallback);
-
-	while (stillDrawing) {
-		if (processingClick == 1) {//we have a click
-			processingClick = 0;
-			points ++;
-
-			double xpos, ypos;//We had a click so get the x/y
-			glfwGetCursorPos(window, &xpos, &ypos);
-			printf("%f, %f\n", xpos,ypos);
-
-			vertices = realloc(vertices, (points* sizeof(float)) * 6);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
-			indices = realloc(indices, sizeof(unsigned int) * points);//Give more memory to this too to store the next indice
-
-			//start to store all the new data, for now just make the shape red
-			vertices[(points - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-			vertices[((points - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);
-			vertices[((points - 1) * 6) + 2] = (float)points/ (float)10;
-			vertices[((points - 1) * 6) + 3] = (float)points/ (float)10;
-			vertices[((points - 1) * 6) + 4] = .2;
-			vertices[((points - 1) * 6) + 5] = 0.0;
-
-			indices[points - 1] = points - 1;//Indices just have to go 0->the last one
+	vertices = calloc(1, sizeof(float));//give them something so we can realloc later
+	indices = calloc(1, sizeof(unsigned int));
+	//END OF USED FOR VERTEX CREATION	
 
 
 
-		}else if (processingClick == 2) {//2 is to end
-			stillDrawing = 0;
+	
+
+	struct ShapeData drawnshape;//The structure that we will return and render from
+
+
+	glfwSetMouseButtonCallback(window, drawShapeCallback);//So when we click we can update the processing click global variable
+
+	//modes
+	int VERT_CREATE = 1;
+	int VERT_CONNECT = 2;
+	int VERT_CHANGE = 3;
+	//end of modes
+
+
+	int stillCreating = 1;//Basically just keep 1 until we're done with the shape
+	int mode = VERT_CREATE;//Set the mode to vertex creation so that we can actually start with making vertices
+	while (stillCreating == 1) {//While we are still creating the shape, lets us loop between the 3 modes until we are finished.
+
+
+
+
+
+		//START OF VERTEX CREATION
+		if (mode == VERT_CREATE) {
+			printf("\nMode: Vertex Creation\n");
+			int stillInMode = 1;
+			while (stillInMode) {
+				if (processingClick == 1) {//we have a click
+					processingClick = 0;//reset as we are now dealing with it
+					points++;
+
+					double xpos, ypos;//We had a click so get the x/y
+					glfwGetCursorPos(window, &xpos, &ypos);
+
+					vertices = realloc(vertices, VERTEX_SIZE * points);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
+					indices = realloc(indices, IND_SIZE * points);//Give more memory to this too to store the next indice
+
+					//start to store all the new data, for now just make the shape red
+					vertices[(points - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+					vertices[((points - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);
+					vertices[((points - 1) * 6) + 2] = 0;
+					vertices[((points - 1) * 6) + 3] = 0;
+					vertices[((points - 1) * 6) + 4] = 0.5;
+					vertices[((points - 1) * 6) + 5] = 0.0;
+					//end of storing data
+
+					indices[points - 1] = points - 1;//Indices just have to go 0->the last one
+
+
+					//printf("\n\n\n");//DEBUG REMOVE
+					//for (int counter = 0; counter < points; counter++) {//print all the vertice data
+					//	printf("%f, %f \n", vertices[counter * 6], vertices[(counter * 6) + 1]);
+					//}
+					//printf("\n\n\n");
+
+				}
+				else if (processingClick == 2) {//We have a right click so stop drawing now
+					processingClick = 0;//No need for right clicks here
+				}
+
+				if (points == 1) {
+					drawnshape = createShape(vertices, indices, points * VERTEX_SIZE, points * IND_SIZE, 1);
+				}
+				else {
+					drawnshape.vertices = vertices;
+					drawnshape.indices = indices;
+					glBufferData(GL_ARRAY_BUFFER, points * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
+					glBufferData(GL_ELEMENT_ARRAY_BUFFER, points * IND_SIZE, drawnshape.indices, GL_DYNAMIC_DRAW);
+				}
+
+
+				if (points > 0) {//Draw our points, if we have any that is
+					glPointSize(10.0f);
+					glBindVertexArray(drawnshape.VAO);
+					glDrawElements(GL_TRIANGLE_STRIP, points, GL_UNSIGNED_INT, drawnshape.indices);
+					//glBindVertexArray(0);
+				}
+
+
+				//GL_POINTS
+				//GL_TRIANGLE_STRIP
+
+
+				/*if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+					mode = VERT_CREATE;
+					stillInMode = 0;
+				}else*/ if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+					mode = VERT_CONNECT;
+					stillInMode = 0;
+				} else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+					mode = VERT_CHANGE;
+					stillInMode = 0;
+				}
+
+
+
+
+
+				//do everything else
+				maindata.proecessinputelsewhere = 1;
+				glfwPollEvents();
+				maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
+
+			}
 		}
+		//END OF VERTEX CREATION
+
+
+		//START OF VERTEX CONNECTION
+		if (mode == VERT_CONNECT) {
+			int stillInMode = 1;
+			while (stillInMode == 1) {
+				printf("haha program ded now");//DEBUG REMOVE
+				int selectedPoint = 0;//Do we have a selected point
+				int selectedPointPos = 0;//The position in the array of the selected point
+				if (processingClick == 1) {//Left click, so let us see whats goin on
+					if (selectedPoint == 0) {
+						//find nearest point
+					}
+
+				} else {
+					processingClick = 0;//In case of any other click
+				}
 
 
 
-		maindata.proecessinputelsewhere = 1;
-		glfwPollEvents();
-		maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
+			}
+		}
+		//END OF VERTEX CONNECTION
+
+
+
+
+
+
+
+
+
+	stillCreating = 0;
+
+
+
+
+
+
+
+
 	}
-	//indices = realloc(indices, (sizeof(unsigned int) * points) + 1);//Give more memory to connect first/last points
-	//indices[points] = 0;
-	for (int counter = 0; counter < points; counter++) {
-		printf("%d", indices[counter]);
-	}
+	
+	//Done with getting the vertices
+
+
+
+
+
+
 
 
 	//Now done with creating all the vertices for the shape, so turn it into a shape object
-	struct ShapeData returnshape = createShape(vertices, indices, points * sizeof(float) * 6, points * sizeof(unsigned int), 1);
+	//struct ShapeData returnshape = createShape(vertices, indices, points * sizeof(float) * 6, (points + 2) * sizeof(unsigned int), 1);
+	
+
+
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	return(returnshape);
+
+	printf("Done\n");
+	return(drawnshape);
 
 
 }
-
-
-
-
-

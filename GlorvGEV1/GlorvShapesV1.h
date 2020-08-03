@@ -17,7 +17,7 @@ struct ShapeData {
 struct ShapeData createShape(float vertices[], unsigned int indices[], int vertSize, int indSize, int saveAll);
 
 //Used to create a shape from just vertices, useful for GL_TRIANGLE_STRIP
-struct ShapeData createVertShape(float vertices[], int vertSize);
+//struct ShapeData createVertShape(float vertices[], int vertSize);
 
 //Used to create a shape that already exists as a file, this just loads the data from the file then sends to createShape
 struct ShapeData createShapeFromFile(char vertFile[], char indFile[], int saveAll);
@@ -33,4 +33,4 @@ void saveShapeToFileStruct(struct ShapeData SaveShape);
 void drawShapeCallback(GLFWwindow* window, int button, int action, int mods);
 
 //Creates and returns a shape from user drawing.
-struct ShapeData drawShape(GLFWwindow* window);
+struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata);
