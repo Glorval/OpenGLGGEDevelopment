@@ -126,22 +126,12 @@ int main()
     alldata.totalindices = 0;
     alldata.totalshapes = 0;
     alldata.waitingonconsole = 1;
+    glPointSize(10.0f);
     while (!glfwWindowShouldClose(window)) {
         alldata = mainLoop(alldata);
         alldata.waitingonconsole = 0;
     }
 
-    //debug test area
-
-
-
-
-    //glfwSwapBuffers(window);
-    //end of debug test area
-
-    //End
-    
-    //scanf("%f", window);
     glfwTerminate();
     return 0;
 }
