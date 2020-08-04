@@ -5,7 +5,7 @@
 
 #define VERTEX_SIZE 6 * sizeof(float)//The size in bytes of a vertex, currently 6 because x/y/z r/g/b
 #define IND_SIZE 1 * sizeof(unsigned int)
-
+#define VERTEX_LENGTH 6//The length of the vertices, 6 entries per,  x/y/z r/g/b
 
 
 struct ShapeData createShape(float vertices[], unsigned int indices[], int vertSize, int indSize, int saveAll) {
@@ -222,13 +222,16 @@ void saveShapeToFileStruct(struct ShapeData SaveShape) {
 //DRAWING SHAPE BY HAND
 
 int processingClick = 0;
+double mouseX, mouseY;
 
 void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 {
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
 		processingClick = 1;
+		glfwGetCursorPos(window, &mouseX, &mouseY);
 	}
 	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		glfwGetCursorPos(window, &mouseX, &mouseY);
 		processingClick = 2;
 	}
 }
@@ -414,6 +417,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					indices = realloc(indices, IND_SIZE * points);//Give more memory to this too to store the next indice
 
 					//start to store all the new data, for now just make the shape red
+					
 					vertices[(points - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
 					vertices[((points - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);
 					vertices[((points - 1) * 6) + 2] = 0;
@@ -421,7 +425,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					vertices[((points - 1) * 6) + 4] = 0.5;
 					vertices[((points - 1) * 6) + 5] = 0.0;
 					//end of storing data
-
+					printf("%f, %f\n", vertices[(points - 1) * 6], vertices[((points - 1) * 6) + 1]);
 					indices[points - 1] = points - 1;//Indices just have to go 0->the last one
 
 
@@ -439,7 +443,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				if (points == 1) {
 					drawnshape = createShape(vertices, indices, points * VERTEX_SIZE, points * IND_SIZE, 1);
 				}
-				else {
+				else {//BUG Potential, if you place one point and try to move it drawnshape wont have the updated info, MAYBE
 					drawnshape.vertices = vertices;
 					drawnshape.indices = indices;
 					glBufferData(GL_ARRAY_BUFFER, points * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
@@ -463,10 +467,10 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					mode = VERT_CREATE;
 					stillInMode = 0;
 				}else*/ if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-					mode = VERT_CONNECT;
+					mode = VERT_CHANGE;
 					stillInMode = 0;
 				} else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-					mode = VERT_CHANGE;
+					mode = VERT_CONNECT;
 					stillInMode = 0;
 				}
 
@@ -484,27 +488,96 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		//END OF VERTEX CREATION
 
 
-		//START OF VERTEX CONNECTION
-		if (mode == VERT_CONNECT) {
+		//START OF VERTEX CHANGING
+		if (mode == VERT_CHANGE) {
+			printf("In Vertex Changing\n");
 			int stillInMode = 1;
+
+			int selectedPoint = 0;//Do we have a selected point
+			int selectedPointPos = 0;//The position in the array of the selected point
+			int closestPointNumber = 0;//Which one in the array is the closest point, points to the X value
+
+
 			while (stillInMode == 1) {
-				printf("haha program ded now");//DEBUG REMOVE
-				int selectedPoint = 0;//Do we have a selected point
-				int selectedPointPos = 0;//The position in the array of the selected point
+				
+
+
+
+
 				if (processingClick == 1) {//Left click, so let us see whats goin on
-					if (selectedPoint == 0) {
-						//find nearest point
+					processingClick = 0;
+
+					//START OF FINDING POINT
+					if (selectedPoint == 0) {//We do NOT have a point selected yet SO LETS FIND ONE HOOAH
+						mouseX = (mouseX - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+						mouseY = -(mouseY - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+						float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
+						
+
+
+						for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+							float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], mouseX, drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], mouseY);
+							if (currentDistance < closestDistance) {
+								closestDistance = currentDistance;
+								closestPointNumber = counter * VERTEX_SIZE; 
+							}
+						}
+
+						selectedPoint = 1;
 					}
+					//END OF FINDING POINT
 
-				} else {
-					processingClick = 0;//In case of any other click
+
+				//END OF LEFT CLICK
+
+				//START OF RIGHT CLICK
+				} else if (processingClick == 2) {//Right click stops the movement of the point
+					processingClick = 0;
+					selectedPoint = 0;//Deselects the point
 				}
+				//END OF RIGHT CLICK
 
 
 
+
+				//START OF MOVING POINT
+				if (selectedPoint == 1) {//Do we have a point selected?
+					double* xy = calloc(2, sizeof(double));
+					glfwGetCursorPos(window, &xy[0], &xy[1]);
+					float XY[2];
+					XY[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+					XY[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+					drawnshape.vertices[closestPointNumber/ sizeof(float)] = XY[0];
+					drawnshape.vertices[(closestPointNumber / sizeof(float)) + 1] = XY[1];
+					glBufferSubData(GL_ARRAY_BUFFER, closestPointNumber, 2 * sizeof(float), XY);
+				}
+				//END OF MOVING POINT
+
+
+
+
+				//Draw our new stuff
+				glPointSize(10.0f);
+				glBindVertexArray(drawnshape.VAO);
+				// GL_POINTS
+				glDrawElements(GL_TRIANGLE_STRIP,  points, GL_UNSIGNED_INT, drawnshape.indices);
+				//glBindVertexArray(0);
+				//End of drawing new stuff
+
+
+
+
+				//do everything else
+				maindata.proecessinputelsewhere = 1;
+				glfwPollEvents();
+				maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
+
+				//Loop starts again
 			}
+
+			//ending
 		}
-		//END OF VERTEX CONNECTION
+		//END OF VERTEX CHANGING
 
 
 

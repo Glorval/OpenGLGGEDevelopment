@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "GlorvMath.h"
 #include "GlorvShapesV1.h"
+
 
 
 //Used in the main loop to keep track of all data, very important

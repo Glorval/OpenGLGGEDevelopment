@@ -147,11 +147,13 @@
   <ItemGroup>
     <ClCompile Include="glad.c" />
     <ClCompile Include="GlorvGEV1\GlorvGE_BaseV1.c" />
+    <ClCompile Include="GlorvGEV1\GlorvMath.c" />
     <ClCompile Include="GlorvGEV1\GlorvShapesV1.c" />
     <ClCompile Include="MainBlock.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GlorvGEV1\GlorvGE_BaseV1.h" />
+    <ClInclude Include="GlorvGEV1\GlorvMath.h" />
     <ClInclude Include="GlorvGEV1\GlorvShapesV1.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
