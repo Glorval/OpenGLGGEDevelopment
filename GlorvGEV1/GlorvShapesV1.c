@@ -252,6 +252,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	int points = 0;
 	float* vertices;//to store the vertices in easily
 	int* indices;//same
+	int totalIndices = 0;//To store how many indices we have total, cause ya know thats important
 
 	vertices = calloc(1, sizeof(float));//give them something so we can realloc later
 	indices = calloc(1, sizeof(unsigned int));
@@ -275,16 +276,16 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 
 	int stillCreating = 1;//Basically just keep 1 until we're done with the shape
+
+	//DEFAULT MODE
 	int mode = VERT_CREATE;//Set the mode to vertex creation so that we can actually start with making vertices
+
 	while (stillCreating == 1) {//While we are still creating the shape, lets us loop between the 3 modes until we are finished.
-
-
-
 
 
 		//START OF VERTEX CREATION
 		if (mode == VERT_CREATE) {
-			printf("\nMode: Vertex Creation\n");
+			printf("Mode: Vertex Creation\n");
 			int stillInMode = 1;
 
 			while (stillInMode) {//WHILE STILL ADDING VERTICES
@@ -337,7 +338,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					//glPointSize(10.0f);
 					glBindVertexArray(drawnshape.VAO);
 					glDrawArrays(GL_POINTS, 0, points);
-					glDrawElements(GL_TRIANGLE_STRIP, points, GL_UNSIGNED_INT, drawnshape.indices);
+					glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
 					glBindVertexArray(0);
 					//End of drawing new stuff
 				}
@@ -379,7 +380,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 		//START OF VERTEX CHANGING
 		if (mode == VERT_CHANGE) {
-			printf("In Vertex Changing\n");
+			printf("Mode: Vertex Changing\n");
 			int stillInMode = 1;
 
 			int selectedPoint = 0;//Do we have a selected point
@@ -456,7 +457,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				//glPointSize(10.0f);
 				glBindVertexArray(drawnshape.VAO);
 				glDrawArrays(GL_POINTS, 0, points);
-				glDrawElements(GL_TRIANGLE_STRIP, points, GL_UNSIGNED_INT, drawnshape.indices);
+				glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
 				glBindVertexArray(0);
 				//End of drawing new stuff
 
@@ -497,16 +498,18 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		//END OF VERTEX CHANGING
 
 
-
-
 		//START OF VERTEX CONNECTING
 		if (mode == VERT_CONNECT) {
 			int stillInMode = 1;
+			printf("Mode: Vertex Connection.\n");
+			int closestPointNumber = 0;//The closest vertex entry
+			int tempIndices[3];//To temporarily store the indices until we have 3
+			int howManyIndices = 0;//To indicate when we have 3 indices stored.
+
 
 			while(stillInMode){
 
-				int closestPointNumber = 0;//The closest point in bytes
-
+				
 
 				if (processingClick == 1) {//left click, find the closest point and its array value and save an index to it
 					processingClick = 0;
@@ -527,13 +530,33 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 						float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
 						if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
 							closestDistance = currentDistance;
-							closestPointNumber = counter * VERTEX_SIZE;
+							closestPointNumber = counter;
 						}
 
 					}
 
-					//Now we have the closest point, so make an index out of it.
+					//Now we have the closest point, so make a temp index out of it.
+					totalIndices++;
 					
+					indices = realloc(indices, sizeof(unsigned int) * totalIndices);//Grab more memory to store em in
+					indices[totalIndices - 1] = closestPointNumber;
+					drawnshape.indices = indices;
+					
+
+
+					//if (howManyIndices == 3) {//We have 3 indices now SO LETS SAVE EM (And reset the counter for the next threeeeee
+					//	totalIndices = totalIndices + howManyIndices;
+					//	indices = realloc(indices, sizeof(unsigned int) * totalIndices);//Grab more memory to store em in
+					//	indices[totalIndices - 3] = tempIndices[0];//Offset back by 3 because 20 total spots means 0->19, 20-3 = 17,  17->18->19 = 3 spots
+					//	indices[totalIndices - 2] = tempIndices[1];
+					//	indices[totalIndices - 1] = tempIndices[2];
+					//	printf("%d, %d, %d\n", indices[totalIndices - 3], indices[totalIndices - 2], indices[totalIndices - 1]);
+					//	howManyIndices = 0;//Reset this
+					//	drawnshape.indices = indices;
+					//	//glBindVertexArray(drawnshape.VAO);
+					//	//glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (totalIndices - 3) , 3 * sizeof(unsigned int), tempIndices);//update opengl
+					//	//glBindVertexArray(0);
+					//}
 
 
 
@@ -555,7 +578,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				//glPointSize(10.0f);
 				glBindVertexArray(drawnshape.VAO);
 				glDrawArrays(GL_POINTS, 0, points);
-				glDrawElements(GL_TRIANGLE_STRIP, points, GL_UNSIGNED_INT, drawnshape.indices);
+				glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
 				glBindVertexArray(0);
 				//End of drawing new stuff
 
