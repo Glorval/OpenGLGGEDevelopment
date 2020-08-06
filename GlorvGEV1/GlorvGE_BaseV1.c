@@ -21,7 +21,7 @@ struct ShaderStrings getShaderStrings() {
 
 
 	//Vertex Shader Loading
-	FILE* vertSourceFile = fopen("GlorvGEV1/shaders/VectSource.shader", "r");
+	FILE* vertSourceFile = fopen("GlorvGEV1/shaders/VectSource.glsl", "r");
 	char* vectSource;
 	vectSource = (char*)calloc(100, sizeof(char));
 
@@ -52,7 +52,7 @@ struct ShaderStrings getShaderStrings() {
 
 
 	//Fragment Shader Loading
-	FILE* fragSourceFile = fopen("GlorvGEV1/shaders/FragSource.shader", "r");
+	FILE* fragSourceFile = fopen("GlorvGEV1/shaders/FragSource.glsl", "r");
 	char* fragSource;
 	fragSource = (char*)calloc(100, sizeof(char));
 

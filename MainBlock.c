@@ -46,9 +46,9 @@ GLFWwindow* window;
 struct inputReturns inputProc() {
     struct inputReturns returnData;
     returnData.success = 1;
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    /*if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, 1);
-    }
+    }*/
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == 1) {
         glfwGetCursorPos(window, &returnData.mouseInput.xposOnClick, &returnData.mouseInput.yposOnClick);
         printf("click\n");

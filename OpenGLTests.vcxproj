@@ -156,6 +156,10 @@
     <ClInclude Include="GlorvGEV1\GlorvMath.h" />
     <ClInclude Include="GlorvGEV1\GlorvShapesV1.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="GlorvGEV1\shaders\FragSource.glsl" />
+    <None Include="GlorvGEV1\shaders\VectSource.glsl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

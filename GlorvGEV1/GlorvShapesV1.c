@@ -45,33 +45,6 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 }
 
 
-
-//struct ShapeData createVertShape(float vertices[], int vertSize) {
-//	struct ShapeData Returns;
-//	glGenVertexArrays(1, &Returns.VAO);
-//	glGenBuffers(1, &Returns.VBO);
-//	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-//	glBindVertexArray(Returns.VAO);
-//
-//	glBindBuffer(GL_ARRAY_BUFFER, Returns.VBO);
-//	glBufferData(GL_ARRAY_BUFFER, vertSize, vertices, GL_DYNAMIC_DRAW);
-//
-//	// position attribute
-//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-//	glEnableVertexAttribArray(0);
-//	// color attribute
-//	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-//	glEnableVertexAttribArray(1);
-//
-//
-//
-//
-//	Returns.vertsize = vertSize;
-//	Returns.vertices = vertices;
-//	return(Returns);
-//}
-
-
 struct ShapeData createShapeFromFile(char vertFile[], char indFile[], int saveAll) {
 	char vertFileFixed[100] = "Objects/";
 	char indFileFixed[100] = "Objects/";
@@ -209,17 +182,36 @@ void saveShapeToFileStruct(struct ShapeData SaveShape) {
 
 
 
-
-
-
-
-
-
-
-
-
-
 //DRAWING SHAPE BY HAND
+
+int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window) {
+	int closestPointNumber = 0;
+
+	double* xy = calloc(2, sizeof(double));
+	glfwGetCursorPos(window, &xy[0], &xy[1]);
+
+	xy[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+	xy[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+
+	float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
+
+	for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+
+		double currentDistance = distanceTwoDD(givenshape.vertices[counter * VERTEX_LENGTH], xy[0], givenshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
+		if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
+			closestDistance = currentDistance;
+			closestPointNumber = counter;
+		}
+
+	}
+	return(closestPointNumber);
+}
+
+
+
+
+
+
 
 int processingClick = 0;
 //double mouseX, mouseY;
@@ -243,20 +235,36 @@ void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 
 //Plan for how it will work: Get all the vertices while rendering them as points, then the user clicks on pairs of 3 vertices to connect them as a triangle.  
 //Lastly the user should be able to click a vertex and then have it follow the mouse until they click again, and a way to switch between these 3 modes of 'vector creation' 'vector connection' and 'vector changing'
-struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
-	printf("Now drawing a shape.");
 
+struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
+	printf("Now drawing a shape.\n\n\n");
+
+	double TIME_BETWEEN_MODES = .25;//The minimum time between switching modes.
+
+	//VERTEX COLOUR MANIPULATION VARIABLES
+		float red, green, blue;//Currently selected colour
+		red = 1.0;
+		green = 0.0;
+		blue = 0.0;
+	//END OF VERTEX COLOUR MANIPULATION VARIABLES
 
 
 	//USED FOR VERTEX CREATION
-	int points = 0;
-	float* vertices;//to store the vertices in easily
-	int* indices;//same
-	int totalIndices = 0;//To store how many indices we have total, cause ya know thats important
+		int points = 0;
+		float* vertices;//to store the vertices in easily
+		int* indices;//same
+		int totalIndices = 0;//To store how many indices we have total, cause ya know thats important
 
-	vertices = calloc(1, sizeof(float));//give them something so we can realloc later
-	indices = calloc(1, sizeof(unsigned int));
+		vertices = calloc(1, sizeof(float));//give them something so we can realloc later
+		indices = calloc(1, sizeof(unsigned int));
 	//END OF USED FOR VERTEX CREATION	
+
+
+	//USED FOR VERTEX MOVING
+		int selectedPoint = 0;//Do we have a selected point
+		int selectedPointPos = 0;//The position in the array of the selected point
+		int closestPointNumber = 0;//Which one in the array is the closest point, points to the X value
+	//END OF USED FOR VERTEX MOVING
 
 
 
@@ -268,168 +276,155 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	glfwSetMouseButtonCallback(window, drawShapeCallback);//So when we click we can update the processing click global variable
 
 	//modes
-	int VERT_CREATE = 1;
-	int VERT_CONNECT = 2;
-	int VERT_CHANGE = 3;
-	int END_OF_CREATION = 0;
+		int VERT_CREATE = 1;
+		int VERT_CONNECT = 2;
+		int VERT_CHANGE = 3;
+		int VERT_COLOUR = 4;
+		int END_OF_CREATION = 0;
+
+		//SET DEFAULT MODE
+		int mode = VERT_CREATE;//Set the mode to vertex creation so that we can actually start with making vertices
 	//end of modes
 
 
 	int stillCreating = 1;//Basically just keep 1 until we're done with the shape
 
-	//DEFAULT MODE
-	int mode = VERT_CREATE;//Set the mode to vertex creation so that we can actually start with making vertices
+	double time = 0;
+	double timeAtLastPrintf = 0;//Used to make sure we dont spam the crap out of the 'Mode is: x' text
 
 	while (stillCreating == 1) {//While we are still creating the shape, lets us loop between the 3 modes until we are finished.
-
+		
 
 		//START OF VERTEX CREATION
 		if (mode == VERT_CREATE) {
-			printf("Mode: Vertex Creation\n");
-			int stillInMode = 1;
 
-			while (stillInMode) {//WHILE STILL ADDING VERTICES
+			//IF WE HAVE A LEFT CLICK TO CREATE, SAVE ALL VERTICIES NO LONGER SAVES INDICES BECAUSE CONNECT MODE
+			if (processingClick == 1) {//we have a click
+				processingClick = 0;//reset as we are now dealing with it
+				points++;
 
-				//IF WE HAVE A LEFT CLICK TO CREATE, SAVE ALL VERTICIES NO LONGER SAVES INDICES BECAUSE CONNECT MODE
-				if (processingClick == 1) {//we have a click
-					processingClick = 0;//reset as we are now dealing with it
-					points++;
+				double xpos, ypos;//We had a click so get the x/y
+				glfwGetCursorPos(window, &xpos, &ypos);
 
-					double xpos, ypos;//We had a click so get the x/y
-					glfwGetCursorPos(window, &xpos, &ypos);
+				vertices = realloc(vertices, VERTEX_SIZE * points);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
 
-					vertices = realloc(vertices, VERTEX_SIZE * points);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
-					//indices = realloc(indices, IND_SIZE * points);//Give more memory to this too to store the next indice
-
-					//start to store all the new data, for now just make the shape red
+				//start to store all the new data, for now just make the shape red
 					
-					vertices[(points - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-					vertices[((points - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);
-					vertices[((points - 1) * 6) + 2] = 0;
-					vertices[((points - 1) * 6) + 3] = 0;
-					vertices[((points - 1) * 6) + 4] = 0.5;
-					vertices[((points - 1) * 6) + 5] = 0.0;
-					//end of storing data
+				vertices[(points - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);//x
+				vertices[((points - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);//y
+				vertices[((points - 1) * 6) + 2] = 0;//z
+				vertices[((points - 1) * 6) + 3] = red;//red
+				vertices[((points - 1) * 6) + 4] = green;//green
+				vertices[((points - 1) * 6) + 5] = blue;//blue
+				//end of storing data
 
+			}
+			//VERTEX DELETION
+			else if (processingClick == 2) {//Right click deletes vertices
+				processingClick = 0;//Reset the click
+				int vertToDelete = closestVert(drawnshape, points, window);//Find the closest vertice to the click
+				printf("Vert To Delete: %d\n", vertToDelete);//DEBUG REMOVE
 
-					//indices[points - 1] = points - 1;//Indices just have to go 0->the last one
-
+				for (int current = vertToDelete * VERTEX_LENGTH; current < (points - 1) * VERTEX_LENGTH; current = current + VERTEX_LENGTH) {//This starts at the vertice to get rid of and goes through all the rest of the vertices
+					for(int oneOfSix = 0; oneOfSix < 6; oneOfSix++){//and goes through all the rest of the vertices pushing them back a slot, removing a point counter (Because one got deleted) and then eventually freeing memory from OpenGL
+						vertices[current + oneOfSix] = vertices[current + VERTEX_LENGTH + oneOfSix];
+					}
 				}
-				else if (processingClick == 2) {//We have a right click so stop drawing now
-					processingClick = 0;//No need for right clicks here
-				}
-				//END OF CLICK REGISTERING
+				points--;//We got rid of a point
+				vertices = realloc(vertices, VERTEX_SIZE * points);//can re-allocate memory again, not strictly needed but oh well prevents garbage entries
+				drawnshape.vertices = vertices;
+				glBufferData(GL_ARRAY_BUFFER, points * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);//Reallocate all the memory used by opengl
 
-
-				if (points == 1) {
-					drawnshape = createShape(vertices, indices, points * VERTEX_SIZE, points * IND_SIZE, 1);
-				}
-				else {//BUG Potential, if you place one point and try to move it drawnshape wont have the updated info, MAYBE
-					drawnshape.vertices = vertices;
-					//drawnshape.indices = indices;
-					glBufferData(GL_ARRAY_BUFFER, points * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
-					//glBufferData(GL_ELEMENT_ARRAY_BUFFER, points * IND_SIZE, drawnshape.indices, GL_DYNAMIC_DRAW);
-				}
-
-
-
-				if (points > 0) {//Extra check on the first one since we dont have any points to start with
-					//Draw our new stuff
-					//glPointSize(10.0f);
-					glBindVertexArray(drawnshape.VAO);
-					glDrawArrays(GL_POINTS, 0, points);
-					glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
-					glBindVertexArray(0);
-					//End of drawing new stuff
-				}
 				
 
-
-
-
-				//MODE SELECTOR CODE
-				/*if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-					mode = VERT_CREATE;
-					stillInMode = 0;
-				}else*/ if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-					mode = VERT_CHANGE;
-					stillInMode = 0;
-				} else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-					mode = VERT_CONNECT;
-					stillInMode = 0;
-				} else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
-					mode = END_OF_CREATION;
-					stillInMode = 0;
+				//now we have removed the vertice, updated openGl, now we have to re-arrange any indices.
+				//The way this will be done: Look at each group of three indices (Triangle) and if any of the three reference it REMOVE THEM and shift everything over.
+				for (int currentThree = 0; currentThree < totalIndices; currentThree = currentThree + 3) {//Run through all indices 3 at a time
+					if ((indices[currentThree] == vertToDelete) || (indices[currentThree + 1] == vertToDelete) || (indices[currentThree + 2] == vertToDelete)) {//Do any of the three point to the removed vertex?
+						if (currentThree == totalIndices - 3) {//Is this the last trio of index entries? Because if so we just need to cut the memory off
+							indices = realloc(indices, IND_SIZE * totalIndices);//Just chop it off
+						}else{
+							for (int counter = currentThree; counter < totalIndices - 3; counter += 3) {//Shift everything back a trio overwriting the useless entry
+								indices[counter] = indices[counter + 3];
+								indices[counter + 1] = indices[counter + 4];
+								indices[counter + 2] = indices[counter + 5];
+							}
+							currentThree = currentThree - 3;//Just back this up to make sure we dont skip any, because if it goes entry 1, 2, 3 and we remove 1 it becomes 2, 3, 3 with the last 3 being cutoff but we're now in POSITION 2, past 2
+							indices = realloc(indices, IND_SIZE * totalIndices);//Then chop off the duplicate end
+						}
+						totalIndices = totalIndices - 3;//We have removed a trio of entries so keep track of it
+					}
 				}
-				//END OF MODE SELECTOR
+
+				for (int current = 0; current < totalIndices; current++) {//Run through all indices that remain and if any were referencing a vertex past the deleted one, lower the value they point to
+					if (indices[current] > vertToDelete) {//The reason for this is because if we have vertex 0, 1, 2 ,3 ,4 and remove 2, 3 becomes 2, 4 becomes 3 and we need the pointer to 4 to point to 3
+						indices[current] --;
+					}
+				}	
+				drawnshape.indices = indices;
+
+			//END OF VERTEX DELETION
+			}
+			//END OF CLICK REGISTERING
 
 
 
 
-				//UPDATE THE ENTIRE REST OF THE PROGRAM
-				maindata.proecessinputelsewhere = 1;
-				glfwPollEvents();
-				maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
-				//END OF UPDATING THE REST OF THE PROGRAM
+			//CREATE SHAPEDATA IF WE CREATE A VERTEX
+			if (points == 1) {//If we have our first point, create the actual data in opengl for it
+				drawnshape = createShape(vertices, indices, points * VERTEX_SIZE, points * IND_SIZE, 1);
+			}
+			//OTHERWISE UPDATE THE SHAPE
+			else if(points > 1) {//BUG Potential, if you place one point and try to move it drawnshape wont have the updated info, MAYBE
+				drawnshape.vertices = vertices;
+				//drawnshape.indices = indices;
+				glBufferData(GL_ARRAY_BUFFER, points * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
+				//glBufferData(GL_ELEMENT_ARRAY_BUFFER, points * IND_SIZE, drawnshape.indices, GL_DYNAMIC_DRAW);
+			}
 
-
-			}//RESTET LOOP
 		}//END OF IF STATEMENT
 		//END OF VERTEX CREATION
 
 
 		//START OF VERTEX CHANGING
 		if (mode == VERT_CHANGE) {
-			printf("Mode: Vertex Changing\n");
-			int stillInMode = 1;
 
-			int selectedPoint = 0;//Do we have a selected point
-			int selectedPointPos = 0;//The position in the array of the selected point
-			int closestPointNumber = 0;//Which one in the array is the closest point, points to the X value
+			if (processingClick == 1) {//Left click, so let us see whats goin on
+				processingClick = 0;
 
-
-			while (stillInMode == 1) {
-				
-
-
-
-
-				if (processingClick == 1) {//Left click, so let us see whats goin on
-					processingClick = 0;
-
-					//START OF FINDING POINT
-					if (selectedPoint == 0) {//We do NOT have a point selected yet SO LETS FIND ONE HOOAH
-						double* xy = calloc(2, sizeof(double));
-						glfwGetCursorPos(window, &xy[0], &xy[1]);
-						float XY[2];
-						XY[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-						XY[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
-						float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
+				//START OF FINDING POINT
+				if (selectedPoint == 0) {//We do NOT have a point selected yet SO LETS FIND ONE HOOAH
+					double* xy = calloc(2, sizeof(double));
+					glfwGetCursorPos(window, &xy[0], &xy[1]);
+					float XY[2];
+					XY[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+					XY[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+					float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
 						
 
-						for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+					for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
 
-							float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
-							if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
-								closestDistance = currentDistance;
-								closestPointNumber = counter * VERTEX_SIZE; 
-							}
-
+						float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
+						if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
+							closestDistance = currentDistance;
+							closestPointNumber = counter * VERTEX_SIZE; 
 						}
 
-						selectedPoint = 1;
 					}
-					//END OF FINDING POINT
 
-
-				//END OF LEFT CLICK
-
-				//START OF RIGHT CLICK
-				} else if (processingClick == 2) {//Right click stops the movement of the point
-					processingClick = 0;
-					selectedPoint = 0;//Deselects the point
+					selectedPoint = 1;
 				}
-				//END OF RIGHT CLICK
+				//END OF FINDING POINT
+
+
+			//END OF LEFT CLICK
+
+			//START OF RIGHT CLICK
+			} else if (processingClick == 2) {//Right click stops the movement of the point
+				processingClick = 0;
+				selectedPoint = 0;//Deselects the point
+			}
+			//END OF RIGHT CLICK
 
 
 
@@ -450,181 +445,203 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				}
 				//END OF MOVING POINT
 
-
-
-
-				//Draw our new stuff
-				//glPointSize(10.0f);
-				glBindVertexArray(drawnshape.VAO);
-				glDrawArrays(GL_POINTS, 0, points);
-				glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
-				glBindVertexArray(0);
-				//End of drawing new stuff
-
-
-
-
-				//MODE SELECTOR CODE
-				if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-					mode = VERT_CREATE;
-					stillInMode = 0;
-				}/*else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-					mode = VERT_CHANGE;
-					stillInMode = 0;
-				}*/ else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-					mode = VERT_CONNECT;
-					stillInMode = 0;
-				} else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
-					mode = END_OF_CREATION;
-					stillInMode = 0;
-				}
-				//END OF MODE SELECTOR
-
-
-
-
-
-
-				//do everything else
-				maindata.proecessinputelsewhere = 1;
-				glfwPollEvents();
-				maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
-
-				//Loop starts again
-			}
-
-			//ending
 		}
-		//END OF VERTEX CHANGING
+		//END OF VERTEX CHANGING SEGMENT
 
 
 		//START OF VERTEX CONNECTING
 		if (mode == VERT_CONNECT) {
-			int stillInMode = 1;
-			printf("Mode: Vertex Connection.\n");
 			int closestPointNumber = 0;//The closest vertex entry
 			int tempIndices[3];//To temporarily store the indices until we have 3
 			int howManyIndices = 0;//To indicate when we have 3 indices stored.
 
 
-			while(stillInMode){
+			if (processingClick == 1) {//left click, find the closest point and its array value and save an index to it
+				processingClick = 0;
 
-				
+				//FIND CLOSEST POINT TO CLICK
+				double* xy = calloc(2, sizeof(double));
+				glfwGetCursorPos(window, &xy[0], &xy[1]);
 
-				if (processingClick == 1) {//left click, find the closest point and its array value and save an index to it
-					processingClick = 0;
+				float XY[2];
 
-					//FIND CLOSEST POINT TO CLICK
-					double* xy = calloc(2, sizeof(double));
-					glfwGetCursorPos(window, &xy[0], &xy[1]);
+				XY[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+				XY[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
 
-					float XY[2];
+				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
 
-					XY[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-					XY[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+				for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
 
-					float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
-
-					for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
-
-						float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
-						if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
-							closestDistance = currentDistance;
-							closestPointNumber = counter;
-						}
-
+					float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
+					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
+						closestDistance = currentDistance;
+						closestPointNumber = counter;
 					}
 
-					//Now we have the closest point, so make a temp index out of it.
-					totalIndices++;
+				}
+
+				//Now we have the closest point, so make a temp index out of it.
+				//BUG CURRENTLY SAVES INDICES EVEN IF NOT  FULLY CREATED. NEEDS TO GATHER THREE THEN SAVE ALL THREE AT ONCE
+				totalIndices++;
 					
-					indices = realloc(indices, sizeof(unsigned int) * totalIndices);//Grab more memory to store em in
-					indices[totalIndices - 1] = closestPointNumber;
-					drawnshape.indices = indices;
-					
-
-
-					//if (howManyIndices == 3) {//We have 3 indices now SO LETS SAVE EM (And reset the counter for the next threeeeee
-					//	totalIndices = totalIndices + howManyIndices;
-					//	indices = realloc(indices, sizeof(unsigned int) * totalIndices);//Grab more memory to store em in
-					//	indices[totalIndices - 3] = tempIndices[0];//Offset back by 3 because 20 total spots means 0->19, 20-3 = 17,  17->18->19 = 3 spots
-					//	indices[totalIndices - 2] = tempIndices[1];
-					//	indices[totalIndices - 1] = tempIndices[2];
-					//	printf("%d, %d, %d\n", indices[totalIndices - 3], indices[totalIndices - 2], indices[totalIndices - 1]);
-					//	howManyIndices = 0;//Reset this
-					//	drawnshape.indices = indices;
-					//	//glBindVertexArray(drawnshape.VAO);
-					//	//glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * (totalIndices - 3) , 3 * sizeof(unsigned int), tempIndices);//update opengl
-					//	//glBindVertexArray(0);
-					//}
-
-
-
-
+				indices = realloc(indices, sizeof(unsigned int) * totalIndices);//Grab more memory to store em in
+				indices[totalIndices - 1] = closestPointNumber;
+				drawnshape.indices = indices;
 
 				} else if (processingClick == 2) {//Right click. Does nothing at the moment
 					processingClick = 0;
 				}
 
-
-
-
-
-
-
-
-
-				//Draw our new stuff
-				//glPointSize(10.0f);
-				glBindVertexArray(drawnshape.VAO);
-				glDrawArrays(GL_POINTS, 0, points);
-				glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
-				glBindVertexArray(0);
-				//End of drawing new stuff
-
-
-
-
-				//MODE SELECTOR CODE
-				if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-					mode = VERT_CREATE;
-					stillInMode = 0;
-				}else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-					mode = VERT_CHANGE;
-					stillInMode = 0;
-				}/* else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-					mode = VERT_CONNECT;
-					stillInMode = 0;
-				}*/else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
-					mode = END_OF_CREATION;
-					stillInMode = 0;
-				}
-				//END OF MODE SELECTOR
-
-
-
-				//do everything else
-				maindata.proecessinputelsewhere = 1;
-				glfwPollEvents();
-				maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
-
-				//Loop starts again
-
-
-			}//END OF LOOP
 		}
 		//END OF VERTEX CONNECTION
 
+		//VERT COLOUR CHANGING
+		if (mode == VERT_COLOUR) {
+			int closestPointNumber = 0;//The closest vertex entry
+
+			if (processingClick == 1) {//left click, find the closest point and switch its colour to the currently active colour
+				processingClick = 0;
+
+				//FIND CLOSEST POINT TO CLICK
+				double* xy = calloc(2, sizeof(double));
+				glfwGetCursorPos(window, &xy[0], &xy[1]);
+
+				xy[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+				xy[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+
+				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
+
+				for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+
+					double currentDistance = distanceTwoDD(drawnshape.vertices[counter * VERTEX_LENGTH], xy[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
+					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
+						closestDistance = currentDistance;
+						closestPointNumber = counter;
+					}
+
+				}//End of tracking left click, we have a point  now
 
 
-	
+				//so now that we have a point, update its colour to the active colour
+
+				//update shapedata
+				drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 3] = red;
+				drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 4] = green;
+				drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 5] = blue;
+				//end of update shapedata
+
+				//update openGLs data next
+				float datashifter[3];
+				datashifter[0] = red;
+				datashifter[1] = green;
+				datashifter[2] = blue;//						Get to the right portion of the vertices, then go to the third one (Start of RGB)
+				glBufferSubData(GL_ARRAY_BUFFER, (closestPointNumber * VERTEX_SIZE) + (sizeof(float) * 3), 3 * sizeof(float),  datashifter );//update opengl
+
+
+
+
+			}//End of processing click
+
+
+
+		}
+		//END OF VERT COLOUR
+
+
+
+		//END OF MODES, ONTO UPDATES
+
+
+
+		if (points > 0) {//Make sure we have stuff to draw...
+			//Draw our new stuff
+			//glPointSize(10.0f);
+			glBindVertexArray(drawnshape.VAO);
+			//glDrawArrays(GL_POINTS, 0, points);
+			glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
+			glBindVertexArray(0);
+			//End of drawing new stuff
+		}
 
 
 
 
 
+		//MODE SELECTOR CODE
+		if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+			time = glfwGetTime();
+			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+				timeAtLastPrintf = time;
+				printf("Mode: Vertex Creation\n");
+				mode = VERT_CREATE;
+
+				//cleanup variables
+				selectedPoint = 0;
+			}
+		}else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+			time = glfwGetTime();
+			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+				timeAtLastPrintf = time;
+				printf("Mode: Vertex Changing\n");
+				mode = VERT_CHANGE;
+
+				//cleanup variables
+				selectedPoint = 0;
+			}
+		} else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+			time = glfwGetTime();
+			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+				timeAtLastPrintf = time;
+				printf("Mode: Vertex Connection.\n");
+				mode = VERT_CONNECT;
+
+				//cleanup variables
+				selectedPoint = 0;
+			}
+
+		} else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+			time = glfwGetTime();
+			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+				timeAtLastPrintf = time;
+				mode = VERT_COLOUR;
+				printf("Mode: Vertex Colour Changing.\n");
+
+				//cleanup variables
+				selectedPoint = 0;
+			}
+		}else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {//Escape 'brings up menu', in this case it just allows typing to console to get r/g/b
+			time = glfwGetTime();
+			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+				timeAtLastPrintf = time;
+				printf("What colour would you like to set?    ");
+				scanf("%f", &red);
+				scanf("%f", &green);
+				scanf("%f", &blue);
+				printf("%f, %f, %f\n", red, green, blue);
+
+				//cleanup variables
+				selectedPoint = 0;
+			}
+		} else if (glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS) {
+			time = glfwGetTime();
+			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+				timeAtLastPrintf = time;
+				mode = END_OF_CREATION;
+
+				//cleanup variables
+				selectedPoint = 0;
+			}
+		}
+		//END OF MODE SELECTOR
 
 
+
+
+		//UPDATE THE ENTIRE REST OF THE PROGRAM
+		maindata.proecessinputelsewhere = 1;
+		glfwPollEvents();
+		maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
+		//END OF UPDATING THE REST OF THE PROGRAM
 		
 	}
 	
