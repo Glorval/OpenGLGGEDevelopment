@@ -242,6 +242,18 @@ void menuCallback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 
+int lastPressedKey = 0;
+double lastPressedTime = 0;
+void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	lastPressedKey = key;
+	lastPressedTime = glfwGetTime();
+}
+
+
+
+
+
+
 
 
 //Plan for how it will work: Get all the vertices while rendering them as points, then the user clicks on pairs of 3 vertices to connect them as a triangle.  
@@ -618,7 +630,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					memset(input, 0, 25);
 
 
-					printf("What height would you like it on? 0-10, Smaller number is higher ");
+					printf("What height would you like it on? 0-10, Higher is further back. ");
 					scanf("%f", &userLayerNames[layersRemain].depth);
 					while ((getchar()) != '\n');
 					if(userLayerNames[layersRemain].depth != 0){
