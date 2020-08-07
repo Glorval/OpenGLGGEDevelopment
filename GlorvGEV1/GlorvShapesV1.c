@@ -9,6 +9,10 @@
 
 #define DEPTH_ADJUSTER 20000//How much to divide user input by when making 2d objects and layering
 
+#define CHAR_NUM_TO_NUM (int) '0' - 1
+
+
+
 struct ShapeData createShape(float vertices[], unsigned int indices[], int vertSize, int indSize, int saveAll) {
 
 
@@ -229,29 +233,27 @@ void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 	}
 }
 
-int keypress = -1;
-//Used to get key presses in menu;
-void menuCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	for (int currentKey = 0; currentKey < 9; currentKey++) {//Run through 10 keys, unkown what the heccleschmeckle the last ones gona be but oh well, will FIX LATER
-		if (key == (GLFW_KEY_1 + currentKey) && action == GLFW_PRESS) {//Is this the key that was hit?
-			keypress = currentKey;//If so, save it
-			break;//And no need to continue the loop
-		}
-	}
-	
-}
 
 
-int lastPressedKey = 0;
+
+unsigned int lastPressedKey = 0;
 double lastPressedTime = 0;
-void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	lastPressedKey = key;
-	lastPressedTime = glfwGetTime();
+int handlingLastPress = 0;
+
+void character_callback(GLFWwindow* window, unsigned int codepoint) {
+	if (lastPressedTime < glfwGetTime() - .05) {
+		handlingLastPress = 1;
+		lastPressedKey = codepoint;
+		lastPressedTime = glfwGetTime();
+	}
 }
 
-
-
-
+int enterDetection = 0;
+void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (key == GLFW_KEY_ENTER) {
+		enterDetection = 1;
+	}
+}
 
 
 
@@ -261,6 +263,9 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
 
 struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	printf("Now drawing a shape.\n\n\n");
+	
+	glfwSetCharCallback(window, character_callback);//For tippy typing
+
 
 	//Variable stack
 	int menuPosition = 0;//The position in the menu 'function.'
@@ -538,47 +543,47 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		//END OF VERTEX CONNECTION
 
 
-//VERT COLOUR CHANGING
+		//VERT COLOUR CHANGING
 		else if (mode == VERT_COLOUR) {
 		int closestPointNumber = 0;//The closest vertex entry
 
-		if (processingClick == 1) {//left click, find the closest point and switch its colour to the currently active colour
-			processingClick = 0;
+			if (processingClick == 1) {//left click, find the closest point and switch its colour to the currently active colour
+				processingClick = 0;
 
-			//FIND CLOSEST POINT TO CLICK
-			double* xy = calloc(2, sizeof(double));
-			glfwGetCursorPos(window, &xy[0], &xy[1]);
+				//FIND CLOSEST POINT TO CLICK
+				double* xy = calloc(2, sizeof(double));
+				glfwGetCursorPos(window, &xy[0], &xy[1]);
 
-			xy[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-			xy[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+				xy[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+				xy[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
 
-			float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
+				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
 
-			for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+				for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
 
-				double currentDistance = distanceTwoDD(drawnshape.vertices[counter * VERTEX_LENGTH], xy[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
-				if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
-					closestDistance = currentDistance;
-					closestPointNumber = counter;
-				}
+					double currentDistance = distanceTwoDD(drawnshape.vertices[counter * VERTEX_LENGTH], xy[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
+					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
+						closestDistance = currentDistance;
+						closestPointNumber = counter;
+					}
 
-			}//End of tracking left click, we have a point  now
+				}//End of tracking left click, we have a point  now
 
 
-			//so now that we have a point, update its colour to the active colour
+				//so now that we have a point, update its colour to the active colour
 
-			//update shapedata
-			drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 3] = red;
-			drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 4] = green;
-			drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 5] = blue;
-			//end of update shapedata
+				//update shapedata
+				drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 3] = red;
+				drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 4] = green;
+				drawnshape.vertices[(closestPointNumber * VERTEX_LENGTH) + 5] = blue;
+				//end of update shapedata
 
-			//update openGLs data next
-			float datashifter[3];
-			datashifter[0] = red;
-			datashifter[1] = green;
-			datashifter[2] = blue;//						Get to the right portion of the vertices, then go to the third one (Start of RGB)
-			glBufferSubData(GL_ARRAY_BUFFER, (closestPointNumber * VERTEX_SIZE) + (sizeof(float) * 3), 3 * sizeof(float), datashifter);//update opengl
+				//update openGLs data next
+				float datashifter[3];
+				datashifter[0] = red;
+				datashifter[1] = green;
+				datashifter[2] = blue;//						Get to the right portion of the vertices, then go to the third one (Start of RGB)
+				glBufferSubData(GL_ARRAY_BUFFER, (closestPointNumber * VERTEX_SIZE) + (sizeof(float) * 3), 3 * sizeof(float), datashifter);//update opengl
 
 
 
@@ -595,16 +600,20 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		//MENU TO SELECT STUFF
 		else if (mode == MENU) {
 			//SELECT COLOUR
-			if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+			if (lastPressedKey == '1' && handlingLastPress) {
+				handlingLastPress = 0;
 				printf("What colour would you like? ");
 				scanf("%f", &red);
 				scanf("%f", &green);
 				scanf("%f", &blue);
+				mode = VERT_CREATE;//Back out of menu now that we are done here.
+				printf("\nMode: Vertex Creation\n\n");
 			}
 			//END OF SELECT COLOUR
 
 			//CREATE LAYER
-			else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+			else if (lastPressedKey == '2' && handlingLastPress) {
+				handlingLastPress = 0;
 				int layersRemain = -1;
 
 				for (int counter = 0; counter < 10; counter++) {//check if we have any layers remaining, do so by seeing if any are un-named
@@ -616,32 +625,64 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 
 				if (layersRemain >= 0) {//We have at least one layer remaining
+
+					//NAMING THE LAYER
 					printf("What would you like to name this layer?   ");
 					char input[25];
-					memset(input, 0, 24);
-					scanf("%24[^\n]", &input);
-					if (input[0] == 0) {
-						while ((getchar()) != '\n');
-						scanf("%24[^\n]", &input);
+					int current = 0;
+					memset(input, '\0', 25);
+					glfwSetKeyCallback(window, enterDetector);
+					handlingLastPress = 0;//Clear this before we head in
+					while (1) {//Keep looping here until we get an 'enter' press
+						glfwPollEvents();
+						if (handlingLastPress) {
+							handlingLastPress = 0;
+							input[current] = lastPressedKey;
+							printf("%c", lastPressedKey);
+							current++;							
+						}
+						if (enterDetection == 1) {
+							enterDetection = 0;//We handled it
+							break;//and enter is 'we are done here'
+						}
 					}
-					while ((getchar()) != '\n');
+					printf("\n\n");
+					glfwSetKeyCallback(window, NULL);
 					userLayerNames[layersRemain].name = malloc(sizeof(char) * 25);
 					strcpy(userLayerNames[layersRemain].name, input);
-					memset(input, 0, 25);
+					//END OF NAMING THE LAYER
 
 
-					printf("What height would you like it on? 0-10, Higher is further back. ");
-					scanf("%f", &userLayerNames[layersRemain].depth);
-					while ((getchar()) != '\n');
-					if(userLayerNames[layersRemain].depth != 0){
-						userLayerNames[layersRemain].depth = userLayerNames[layersRemain].depth / DEPTH_ADJUSTER;//Readjust so once 3d it doesnt look 3d.
+
+
+					printf("What height would you like to make it? 0 - 9.    ");
+
+					while (1) {//Keep looping here until we get a number
+						glfwPollEvents();
+						if (handlingLastPress) {
+							handlingLastPress = 0;
+							userLayerNames[layersRemain].depth = (float) lastPressedKey - (float)'0';
+							printf("%c\n", lastPressedKey);
+							if (userLayerNames[layersRemain].depth != 0) {
+								userLayerNames[layersRemain].depth = userLayerNames[layersRemain].depth/DEPTH_ADJUSTER;
+							}
+							break;
+						}
 					}
+					
+
+
+
 				}
+
+				mode = VERT_CREATE;//Back out of menu now that we are done here.
+				printf("\nMode: Vertex Creation\n\n");
 			}
 			//END OF CREATE LAYER
 
 			//SWITCH LAYER
-			else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+			else if (lastPressedKey == '3' && handlingLastPress) {
+				handlingLastPress = 0;//Handled
 				int counter = 0;
 				printf("What layer would you like to select?\n");
 				while (userLayerNames[counter].name != NULL) {
@@ -650,49 +691,49 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				}
 
 				
-				time = glfwGetTime();
-				double waitTill = time + (TIME_BETWEEN_MODES/2);//Wait a second to make sure we dont get a double keypress register
-				while (time < waitTill) {
-					time = glfwGetTime();
-					glfwPollEvents();
-				}
-
-				glfwSetKeyCallback(window, menuCallback);//Bind to this for a bit to get a keypress
+				handlingLastPress = 0;//Make sure its clear
 				while (1) {//Wait until we get a key
 					glfwPollEvents();
-					if (keypress >= 0) {
-						printf("%d", keypress);
-						glfwSetKeyCallback(window, NULL);//Unbind and leave the loop as we now have a keypress
+					if (handlingLastPress == 1) {
+						handlingLastPress = 0;//clear it
+						//printf("%c", lastPressedKey);
 						break;
 					}
 				}
 
 				//We have the selected layer now (Hopefully) so we can select it
-				currentLayer = keypress;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
-				keypress = -1;//Reset this
+				
+				currentLayer = (int) lastPressedKey - CHAR_NUM_TO_NUM;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
+				printf("%d\n", currentLayer);
 				printf("Selected Layer: %s\n\n", userLayerNames[currentLayer].name);
+
+				mode = VERT_CREATE;//Back out of menu now that we are done here.
+				printf("\nMode: Vertex Creation\n\n");
 			}
 			//END OF SWITCHING LAYERS
 
 			//SWITCH DRAW VERTICE MODE
-			else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
-				printf("Vertex rendering has been flipped.\n");
+			else if (lastPressedKey == '4' && handlingLastPress) {
+				handlingLastPress = 0;
+				printf("Vertex rendering has been flipped.\n\n");
 				if (drawVertices == 1) {
 					drawVertices = 0;
 				} else {
 					drawVertices = 1;
 				}
+
+				mode = VERT_CREATE;//Back out of menu now that we are done here.
+				printf("\nMode: Vertex Creation\n\n");
 			}
 			//END OF SWITCH DRAW VERTICE MODE
 
 
 
 
-			//BUG MODE WILL ALWAYS FLIP TO LAST PRESSED KEY CURRENTLY
 		}
 		//END OF MENU
 
-
+		
 
 
 		//END OF MODES, ONTO UPDATES
@@ -716,12 +757,12 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 
 		//MODE SELECTOR CODE
+
 		//create mode
-		if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-			time = glfwGetTime();
-			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
-				timeAtLastPrintf = time;
-				printf("Mode: Vertex Creation\n");
+		if (lastPressedKey == '1' && handlingLastPress){
+			handlingLastPress = 0;//Dealt with keypress
+			if(mode != VERT_CREATE){
+				printf("\nMode: Vertex Creation\n\n");
 				mode = VERT_CREATE;
 
 				//cleanup variables
@@ -729,11 +770,10 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			}
 		}//Vertex creation mode
 		//move mode
-		else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-			time = glfwGetTime();
-			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
-				timeAtLastPrintf = time;
-				printf("Mode: Vertex Changing\n");
+		else if (lastPressedKey == '2' && handlingLastPress) {
+			handlingLastPress = 0;//Dealt with keypress
+			if (mode != VERT_CHANGE) {
+				printf("\nMode: Vertex Changing\n\n");
 				mode = VERT_CHANGE;
 
 				//cleanup variables
@@ -741,11 +781,11 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			}
 		} 
 		//Vertex connect mode
-		else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-			time = glfwGetTime();
-			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+		else if (lastPressedKey == '3' && handlingLastPress) {
+			handlingLastPress = 0;//Dealt with keypress
+			if (mode != VERT_CONNECT) {
 				timeAtLastPrintf = time;
-				printf("Mode: Vertex Connection.\n");
+				printf("\nMode: Vertex Connection.\n\n");
 				mode = VERT_CONNECT;
 
 				//cleanup variables
@@ -754,23 +794,24 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 		} //vertex connect mode
 		//vertex delete
-		else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+		else if (lastPressedKey == '4' && handlingLastPress) {
 			time = glfwGetTime();
 			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
 				timeAtLastPrintf = time;
 				mode = VERT_COLOUR;
-				printf("Mode: Vertex Colour Changing.\n");
+				printf("\nMode: Vertex Colour Changing.\n\n");
 
 				//cleanup variables
 				selectedPoint = 0;
 			}
 		}
+		//Old style below for things that arent characters
 		//menu
 		else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {//Escape 'brings up menu'
 			time = glfwGetTime();
 			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
 				timeAtLastPrintf = time;
-				printf("What would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Switch Vertex Rendering\n");
+				printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Switch Vertex Rendering\n\n");
 				mode = MENU;
 				selectedPoint = 0;
 			}
@@ -789,6 +830,8 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		
 		//END OF MODE SELECTOR
 
+
+		//GLOBAL VAR RESETS
 
 
 
