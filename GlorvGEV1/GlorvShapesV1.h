@@ -11,6 +11,11 @@ struct ShapeData {
 	int *fulldata;
 };*/
 
+//Used for 2d layering
+struct LayerNames {//Normal max length is 10 layers
+	char* name;//The name of the layer, max length 25
+	float depth;//The z value of the points moved/created on this layer
+};
 
 
 //Creates a shape using OpenGL and returns a shapedata structure with the VAO/VBO, and if saveAll is enabled it also holds the vertice/indice data and size of said data 

@@ -106,6 +106,7 @@ int main()
     shapeOne.filename = calloc(50, sizeof(char));
     strcpy(&shapeOne.filename, "Test");
     saveShapeToFileStruct(shapeOne);*/
+    glEnable(GL_DEPTH_TEST);
     printf("Time taken to Final End of Setup %f\n", glfwGetTime());
 
 
@@ -115,7 +116,7 @@ int main()
    
 
     
-
+   
 
     //END OF SETUP
     
@@ -174,7 +175,7 @@ struct mainloopData mainLoop(struct mainloopData mainData) {
 
 
     glClearColor(0.0, 0.1, 0.9, 0.5);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
 
