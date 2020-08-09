@@ -234,26 +234,59 @@ void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 }
 
 
-
-
-unsigned int lastPressedKey = 0;
-double lastPressedTime = 0;
-int handlingLastPress = 0;
-
-void character_callback(GLFWwindow* window, unsigned int codepoint) {
-	if (lastPressedTime < glfwGetTime() - .05) {
-		handlingLastPress = 1;
-		lastPressedKey = codepoint;
-		lastPressedTime = glfwGetTime();
+void deleteVertice(struct ShapeData* givenShape, int vert, int vertcount) {
+	for (int currentvert = vert * VERTEX_LENGTH; currentvert < vertcount * VERTEX_LENGTH; currentvert += VERTEX_LENGTH) {
+		for (int swapsies = 0; swapsies < VERTEX_LENGTH; swapsies++) {
+			givenShape->vertices[currentvert + swapsies] = givenShape->vertices[currentvert + swapsies + VERTEX_LENGTH];
+		}
 	}
 }
 
-int enterDetection = 0;
-void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (key == GLFW_KEY_ENTER) {
-		enterDetection = 1;
-	}
-}
+
+
+//unsigned int lastPressedKey = 0;
+//double lastPressedTime = 0;
+//int handlingLastPress = 0;
+//
+//void character_callback(GLFWwindow* window, unsigned int codepoint) {
+//	if (lastPressedTime < glfwGetTime() - .05) {
+//		handlingLastPress = 1;
+//		lastPressedKey = codepoint;
+//		lastPressedTime = glfwGetTime();
+//	}
+//}
+//
+//
+//int enterDetection = 0;
+//void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
+//	if (key == GLFW_KEY_ENTER) {
+//		enterDetection = 1;
+//	}
+//}
+//
+//
+//char keyReader(GLFWwindow* window, int display) {
+//	glfwSetKeyCallback(window, enterDetector);
+//	handlingLastPress = 0;//Clear this before we head in
+//	while (1) {//Keep looping here until we get an 'enter' press
+//		glfwPollEvents();
+//		if (handlingLastPress) {
+//			handlingLastPress = 0;
+//			break;
+//			if (display) {
+//				printf("%c", lastPressedKey);
+//			}
+//		}
+//		if (enterDetection) {//Enter means we're done here
+//			enterDetection = 0;
+//			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
+//			return('\0');
+//		}
+//	}
+//	glfwSetKeyCallback(window, NULL);//We're done so reset the callback
+//	return(lastPressedKey);
+//}
+
 
 
 
@@ -366,17 +399,17 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				//end of storing data
 
 			}
+
+
 			//VERTEX DELETION
 			else if (processingClick == 2) {//Right click deletes vertices
 				processingClick = 0;//Reset the click
 				int vertToDelete = closestVert(drawnshape, points, window);//Find the closest vertice to the click
 				
 
-				for (int current = vertToDelete * VERTEX_LENGTH; current < (points - 1) * VERTEX_LENGTH; current = current + VERTEX_LENGTH) {//This starts at the vertice to get rid of and goes through all the rest of the vertices
-					for(int oneOfSix = 0; oneOfSix < 6; oneOfSix++){//and goes through all the rest of the vertices pushing them back a slot, removing a point counter (Because one got deleted) and then eventually freeing memory from OpenGL
-						vertices[current + oneOfSix] = vertices[current + VERTEX_LENGTH + oneOfSix];
-					}
-				}
+
+				deleteVertice(&drawnshape, vertToDelete, points);
+				
 				points--;//We got rid of a point
 				vertices = realloc(vertices, VERTEX_SIZE * points);//can re-allocate memory again, not strictly needed but oh well prevents garbage entries
 				drawnshape.vertices = vertices;
@@ -597,19 +630,80 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		}
 		//END OF VERT COLOUR
 
+
 		//MENU TO SELECT STUFF
 		else if (mode == MENU) {
+
 			//SELECT COLOUR
 			if (lastPressedKey == '1' && handlingLastPress) {
 				handlingLastPress = 0;
-				printf("What colour would you like? ");
-				scanf("%f", &red);
-				scanf("%f", &green);
-				scanf("%f", &blue);
+
+				int twoFiftyFive = 0;//Declare our variables
+				int currentDigit = 0;
+				char numInput[3];
+
+				printf("What colour would you like?  ");
+
+
+				//GET RED
+				while (1) {//we break once we hit three (Basically a for loop)
+					numInput[currentDigit] = keyReader(window, 1);//get the next keypress
+					currentDigit++;//update this to keep storing everything
+					if (currentDigit == 3) {
+						break;
+					}
+				}
+				//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+				         //100s										10s									1s
+				
+				twoFiftyFive = (int) (((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+				red = (float) twoFiftyFive / 255;//Then convert the int to a float and BOOM
+				//END OF GET RED
+
+				printf("   ");//add some space
+				currentDigit = 0;//Reset this
+
+				//GET GREEN
+				while (1) {//we break once we hit three (Basically a for loop)
+					numInput[currentDigit] = keyReader(window, 1);//get the next keypress
+					currentDigit++;//update this to keep storing everything
+					if (currentDigit == 3) {
+						break;
+					}
+				}
+				//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+						 //100s										10s									1s
+				twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+				green = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
+				//END OF GET GREEN
+
+				printf("   ");//add some space
+				currentDigit = 0;//Reset this
+
+				//GET BLUE
+				while (1) {//we break once we hit three (Basically a for loop)
+					numInput[currentDigit] = keyReader(window, 1);//get the next keypress
+					currentDigit++;//update this to keep storing everything
+					if (currentDigit == 3) {
+						break;
+					}
+				}
+				//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+						 //100s										10s									1s
+
+				twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+				blue = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
+				//END OF GET BLUE
+
+
+
+
+
 				mode = VERT_CREATE;//Back out of menu now that we are done here.
 				printf("\nMode: Vertex Creation\n\n");
 			}
 			//END OF SELECT COLOUR
+
 
 			//CREATE LAYER
 			else if (lastPressedKey == '2' && handlingLastPress) {
@@ -655,7 +749,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 
 
-					printf("What height would you like to make it? 0 - 9.    ");
+					printf("What depth would you like to make it? 0 - 9.    ");
 
 					while (1) {//Keep looping here until we get a number
 						glfwPollEvents();
@@ -679,6 +773,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				printf("\nMode: Vertex Creation\n\n");
 			}
 			//END OF CREATE LAYER
+
 
 			//SWITCH LAYER
 			else if (lastPressedKey == '3' && handlingLastPress) {
@@ -712,8 +807,120 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			}
 			//END OF SWITCHING LAYERS
 
-			//SWITCH DRAW VERTICE MODE
+
+			//RENAME LAYER
 			else if (lastPressedKey == '4' && handlingLastPress) {
+				handlingLastPress = 0;//Handled
+				int counter = 0;
+
+				printf("What layer would you like to select?\n");
+				while (userLayerNames[counter].name != NULL) {//Print the layers out
+					printf("%d) %s, depth %.0f\n", counter + 1, userLayerNames[counter].name, userLayerNames[counter].depth * DEPTH_ADJUSTER);
+					counter++;
+				}
+
+				handlingLastPress = 0;//Make sure its clear
+				while (1) {//Wait until we get a key
+					glfwPollEvents();
+					if (handlingLastPress == 1) {
+						handlingLastPress = 0;//clear it
+						break;
+					}
+				}
+				//Now we have a number keypress to select it
+
+				currentLayer = (int)lastPressedKey - CHAR_NUM_TO_NUM;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
+				printf("%d\n", currentLayer);
+				printf("Selected Layer: %s\n\n", userLayerNames[currentLayer].name);
+
+				
+				//RE-NAMING THE LAYER
+				printf("What would you like to re-name this layer to?   ");
+				char input[25];
+				int current = 0;
+				memset(input, '\0', 25);
+				glfwSetKeyCallback(window, enterDetector);
+				handlingLastPress = 0;//Clear this before we head in
+				while (1) {//Keep looping here until we get an 'enter' press
+					glfwPollEvents();
+					if (handlingLastPress) {
+						handlingLastPress = 0;
+						input[current] = lastPressedKey;
+						printf("%c", lastPressedKey);
+						current++;
+					}
+					if (enterDetection == 1) {
+						enterDetection = 0;//We handled it
+						break;//and enter is 'we are done here'
+					}
+				}
+				printf("\n\n");
+				glfwSetKeyCallback(window, NULL);
+				userLayerNames[currentLayer].name = malloc(sizeof(char) * 25);
+				strcpy(userLayerNames[currentLayer].name, input);
+				//END OF RE-NAMING THE LAYER
+
+
+
+				//DO NOT re-height the layer
+				////RE-HEIGHTING THE LAYER
+				//printf("What height would you like to make it? 0 - 9.    ");
+
+				//while (1) {//Keep looping here until we get a number
+				//	glfwPollEvents();
+				//	if (handlingLastPress) {
+				//		handlingLastPress = 0;//Handling it
+				//		userLayerNames[currentLayer].depth = (float)lastPressedKey - (float)'0';
+				//		printf("%c\n", lastPressedKey);//Display the user input in the console
+				//		if (userLayerNames[currentLayer].depth != 0) {
+				//			userLayerNames[currentLayer].depth = userLayerNames[currentLayer].depth / DEPTH_ADJUSTER;
+				//		}
+				//		break;
+				//	}
+				//}
+				////END OF RE-HEIGHTING THE LAYER
+
+
+				mode = VERT_CREATE;//Back out of menu now that we are done here.
+				printf("\nMode: Vertex Creation\n\n");
+			}
+			//END OF RENAME LAYER
+
+
+			//DELETE LAYER
+			else if (lastPressedKey == '5' && handlingLastPress) {
+				handlingLastPress = 0;//Handled
+				int counter = 0;
+
+				printf("What layer would you like to delete?\n");
+				while (userLayerNames[counter].name != NULL) {//Print the layers out
+					printf("%d) %s, depth %.0f\n", counter + 1, userLayerNames[counter].name, userLayerNames[counter].depth * DEPTH_ADJUSTER);
+					counter++;
+				}
+
+				handlingLastPress = 0;//Make sure its clear
+				while (1) {//Wait until we get a key
+					glfwPollEvents();
+					if (handlingLastPress == 1) {
+						handlingLastPress = 0;//clear it
+						break;
+					}
+				}
+				//Now we have a number keypress to delete it
+				int layerheight = userLayerNames[counter].depth;//The z value we need to remove points on
+
+
+				for (int current = 0; current < points; current++) {//Run through each vertice to check the z value to see if its on the same layer so as to remove it.
+
+				}
+
+
+
+			}
+			//END OF DELETE LAYER
+
+			//SWITCH DRAW VERTICE MODE
+			else if (lastPressedKey == '6' && handlingLastPress) {
 				handlingLastPress = 0;
 				printf("Vertex rendering has been flipped.\n\n");
 				if (drawVertices == 1) {
@@ -769,6 +976,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				selectedPoint = 0;
 			}
 		}//Vertex creation mode
+
 		//move mode
 		else if (lastPressedKey == '2' && handlingLastPress) {
 			handlingLastPress = 0;//Dealt with keypress
@@ -780,6 +988,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				selectedPoint = 0;
 			}
 		} 
+
 		//Vertex connect mode
 		else if (lastPressedKey == '3' && handlingLastPress) {
 			handlingLastPress = 0;//Dealt with keypress
@@ -793,8 +1002,10 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			}
 
 		} //vertex connect mode
+
 		//vertex delete
 		else if (lastPressedKey == '4' && handlingLastPress) {
+			handlingLastPress = 0;
 			time = glfwGetTime();
 			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
 				timeAtLastPrintf = time;
@@ -805,13 +1016,14 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				selectedPoint = 0;
 			}
 		}
+
 		//Old style below for things that arent characters
 		//menu
 		else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {//Escape 'brings up menu'
 			time = glfwGetTime();
 			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
 				timeAtLastPrintf = time;
-				printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Switch Vertex Rendering\n\n");
+				printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n\n");
 				mode = MENU;
 				selectedPoint = 0;
 			}

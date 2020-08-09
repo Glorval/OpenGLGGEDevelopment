@@ -41,5 +41,15 @@ int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window);
 //Used with DrawShape to find clicks
 void drawShapeCallback(GLFWwindow* window, int button, int action, int mods);
 
+
+
+
 //Creates and returns a shape from user drawing.
 struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata);
+
+
+
+//User input
+void character_callback(GLFWwindow* window, unsigned int codepoint);
+void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
+char keyReader(GLFWwindow* window, int display);

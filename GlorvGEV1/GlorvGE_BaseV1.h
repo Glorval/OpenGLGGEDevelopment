@@ -63,3 +63,23 @@ GLFWwindow* setupEVERYTHING(GLFWwindow* window);
 
 
 struct mainloopData mainLoop(struct mainloopData mainData);
+
+
+
+
+//USER INPUT BLOCK
+
+unsigned int lastPressedKey;
+double lastPressedTime;
+int handlingLastPress;
+
+//Is used to detect a keypress, also saves the pressed key to a varaible for later use
+void character_callback(GLFWwindow* window, unsigned int codepoint);
+
+//Is used to detect when the enter key is hit, useful for end of typing
+int enterDetection;
+void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+//Warning: Will stay in function until keypress. DO NOT USE FOR ONE OFF KEYPRESS
+//Used as a singluar function to return pressed keys, display is whether or not to print to console as typing. Proper format for typing input is while(returnofkeyreader != '\0'){returnofkeyreader = keyreader()}
+char keyReader(GLFWwindow* window, int display);

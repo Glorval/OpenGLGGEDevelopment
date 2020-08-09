@@ -154,7 +154,66 @@ GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
 	glViewport(0, 0, Window_X, Window_Y);
 	//
 	setupShaders();
+
+
+	//Initialization of Global Variables
+
+	lastPressedKey = 0;
+	lastPressedTime = 0;
+	handlingLastPress = 0;
+	enterDetection = 0;
+	//End of Initialization of Global Variables
+
+
+
+
+
+
+
 	printf("Time taken to setup within SetupEverything = %f\n", glfwGetTime());
 	return(window);
 }
 
+
+
+//USER INPUT BLOCK
+
+//Is used to detect a keypress, also saves the pressed key to a varaible for later use
+void character_callback(GLFWwindow* window, unsigned int codepoint) {
+	if (lastPressedTime < glfwGetTime() - .05) {
+		handlingLastPress = 1;
+		lastPressedKey = codepoint;
+		lastPressedTime = glfwGetTime();
+	}
+}
+
+
+//Is used to detect when the enter key is hit, useful for end of typing
+void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (key == GLFW_KEY_ENTER) {
+		enterDetection = 1;
+	}
+}
+
+
+char keyReader(GLFWwindow* window, int display) {
+	glfwSetKeyCallback(window, enterDetector);
+	handlingLastPress = 0;//Clear this before we head in
+	while (1) {//Keep looping here until we get a keypress, then report it
+		glfwPollEvents();
+		if (handlingLastPress) {
+			handlingLastPress = 0;
+			if (display) {
+				printf("%c", lastPressedKey);
+			}
+			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
+			return(lastPressedKey);
+		}
+		if (enterDetection) {//Enter means we're done here
+			enterDetection = 0;
+			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
+			return('\0');
+		}
+	}
+	
+}
