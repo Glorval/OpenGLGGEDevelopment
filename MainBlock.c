@@ -187,11 +187,11 @@ struct mainloopData mainLoop(struct mainloopData mainData) {
         gets(userInput);
         struct consoleReturns consoledata = consoleInput(userInput, &mainData);
         if (consoledata.returningShape == 1) {
-            mainData.sizeofshapes += consoledata.consoleShape.vertsize + consoledata.consoleShape.indsize + sizeof(struct ShapeData);
+            mainData.sizeofshapes += consoledata.consoleShape.vertexcount + consoledata.consoleShape.indexcount + sizeof(struct ShapeData);
             mainData.totalshapes++;
             mainData.AllLoadedShapes = realloc(mainData.AllLoadedShapes, mainData.sizeofshapes);
             mainData.AllLoadedShapes[mainData.totalshapes - 1] = consoledata.consoleShape;
-            mainData.totalindices = consoledata.consoleShape.indsize/sizeof(unsigned int);
+            mainData.totalindices = consoledata.consoleShape.indexcount/sizeof(unsigned int);
         }
     }
 

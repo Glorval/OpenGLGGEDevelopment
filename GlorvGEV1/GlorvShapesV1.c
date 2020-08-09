@@ -3,9 +3,11 @@
 #define WINDOW_X 1440
 #define WINDOW_Y 1080
 
-#define VERTEX_SIZE 6 * sizeof(float)//The size in bytes of a vertex, currently 6 because x/y/z r/g/b
 #define IND_SIZE 1 * sizeof(unsigned int)
 #define VERTEX_LENGTH 6//The length of the vertices, 6 entries per,  x/y/z r/g/b
+#define VERTEX_SIZE VERTEX_LENGTH * sizeof(float)//The size in bytes of a vertex, currently 6 because x/y/z r/g/b
+
+
 
 #define DEPTH_ADJUSTER 20000//How much to divide user input by when making 2d objects and layering
 
@@ -26,10 +28,10 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 	glBindVertexArray(Returns.VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, Returns.VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertSize, vertices, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertSize * VERTEX_SIZE, vertices, GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, &Returns.EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indSize, indices, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indSize * IND_SIZE, indices, GL_DYNAMIC_DRAW);
 
 	// position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
@@ -42,8 +44,8 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 		Returns.fulldata = 1;
 		Returns.indices = indices;
 		Returns.vertices = vertices;
-		Returns.vertsize = vertSize;
-		Returns.indsize = indSize;
+		Returns.vertexcount = vertSize;
+		Returns.indexcount = indSize;
 	}
 
 	return(Returns);
@@ -159,9 +161,9 @@ void saveShapeToFileStruct(struct ShapeData SaveShape) {
 	strcat(vertFile, "Vertices.txt");//All vertice files are named this
 	FILE* vertSaveFile = fopen(vertFile, "w");//The place being written to is OurProgram/Objects/Filename/Vertices.txt
 
-	for(int counter = 0; counter < SaveShape.vertsize; counter++){
+	for(int counter = 0; counter < SaveShape.vertexcount; counter++){
 		fprintf(vertSaveFile, "%f", SaveShape.vertices[counter]);
-		if (counter != SaveShape.vertsize - 1) {
+		if (counter != SaveShape.vertexcount - 1) {
 			fprintf(vertSaveFile, " ");
 		}
 	}
@@ -171,9 +173,9 @@ void saveShapeToFileStruct(struct ShapeData SaveShape) {
 	strcat(indFile, "Indices.txt");//All vertice files are named this
 	FILE* indSaveFile = fopen(indFile, "w");//The place being written to is OurProgram/Objects/Filename/Vertices.txt
 
-	for (int counter = 0; counter < SaveShape.indsize; counter++) {
+	for (int counter = 0; counter < SaveShape.indexcount; counter++) {
 		fprintf(indSaveFile, "%u", SaveShape.indices[counter]);
-		if (counter != SaveShape.indsize - 1) {
+		if (counter != SaveShape.indexcount - 1) {
 			fprintf(indSaveFile, " ");
 		}
 	}
@@ -234,59 +236,15 @@ void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 }
 
 
-void deleteVertice(struct ShapeData* givenShape, int vert, int vertcount) {
-	for (int currentvert = vert * VERTEX_LENGTH; currentvert < vertcount * VERTEX_LENGTH; currentvert += VERTEX_LENGTH) {
-		for (int swapsies = 0; swapsies < VERTEX_LENGTH; swapsies++) {
+void deleteVertice(struct ShapeData* givenShape, int vert) {
+	for (int currentvert = vert * VERTEX_LENGTH; currentvert < givenShape->vertexcount * VERTEX_LENGTH; currentvert += VERTEX_LENGTH) {//Run through all vertices at and past the given one
+		for (int swapsies = 0; swapsies < VERTEX_LENGTH; swapsies++) {//because then we run through and copy the next vertice into the current one, overwriting the one to be deleted
 			givenShape->vertices[currentvert + swapsies] = givenShape->vertices[currentvert + swapsies + VERTEX_LENGTH];
 		}
 	}
+	givenShape->vertices = realloc(givenShape->vertices, givenShape->vertexcount * VERTEX_SIZE);//'lower' the memory assigned to the array
+	givenShape->vertexcount--;//we deleted a vertice, so keep track of it
 }
-
-
-
-//unsigned int lastPressedKey = 0;
-//double lastPressedTime = 0;
-//int handlingLastPress = 0;
-//
-//void character_callback(GLFWwindow* window, unsigned int codepoint) {
-//	if (lastPressedTime < glfwGetTime() - .05) {
-//		handlingLastPress = 1;
-//		lastPressedKey = codepoint;
-//		lastPressedTime = glfwGetTime();
-//	}
-//}
-//
-//
-//int enterDetection = 0;
-//void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
-//	if (key == GLFW_KEY_ENTER) {
-//		enterDetection = 1;
-//	}
-//}
-//
-//
-//char keyReader(GLFWwindow* window, int display) {
-//	glfwSetKeyCallback(window, enterDetector);
-//	handlingLastPress = 0;//Clear this before we head in
-//	while (1) {//Keep looping here until we get an 'enter' press
-//		glfwPollEvents();
-//		if (handlingLastPress) {
-//			handlingLastPress = 0;
-//			break;
-//			if (display) {
-//				printf("%c", lastPressedKey);
-//			}
-//		}
-//		if (enterDetection) {//Enter means we're done here
-//			enterDetection = 0;
-//			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
-//			return('\0');
-//		}
-//	}
-//	glfwSetKeyCallback(window, NULL);//We're done so reset the callback
-//	return(lastPressedKey);
-//}
-
 
 
 
@@ -321,16 +279,6 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	//VERTEX AUXILLERY DATA, CARRIES THROUGH TO MANY VERTICES
 
 
-	//USED FOR VERTEX CREATION
-		int points = 0;
-		float* vertices;//to store the vertices in easily
-		int* indices;//same
-		int totalIndices = 0;//To store how many indices we have total, cause ya know thats important
-
-		vertices = calloc(1, sizeof(float));//give them something so we can realloc later
-		indices = calloc(1, sizeof(unsigned int));
-	//END OF USED FOR VERTEX CREATION	
-
 
 	//USED FOR VERTEX MOVING
 		int selectedPoint = 0;//Do we have a selected point
@@ -343,6 +291,12 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	
 
 	struct ShapeData drawnshape;//The structure that we will return and render from
+	drawnshape.vertices = malloc(sizeof(float));//Initalize each
+	drawnshape.indices = malloc(sizeof(unsigned int));
+	drawnshape.vertexcount = 0;
+	drawnshape.indexcount = 0;
+	
+
 
 
 	glfwSetMouseButtonCallback(window, drawShapeCallback);//So when we click we can update the processing click global variable
@@ -377,25 +331,25 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			//IF WE HAVE A LEFT CLICK TO CREATE, SAVE ALL VERTICIES NO LONGER SAVES INDICES BECAUSE CONNECT MODE
 			if (processingClick == 1) {//we have a click
 				processingClick = 0;//reset as we are now dealing with it
-				points++;
+				drawnshape.vertexcount++;
 
 				double xpos, ypos;//We had a click so get the x/y
 				glfwGetCursorPos(window, &xpos, &ypos);
 
-				vertices = realloc(vertices, VERTEX_SIZE * points);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
+				drawnshape.vertices = realloc(drawnshape.vertices, drawnshape.vertexcount * VERTEX_SIZE);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
 
 				//start to store all the new data, for now just make the shape red
 					
-				vertices[(points - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);//x
-				vertices[((points - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);//y
+				drawnshape.vertices[(drawnshape.vertexcount - 1) * 6] = (xpos - (.5 * WINDOW_X)) / (.5 * WINDOW_X);//x
+				drawnshape.vertices[((drawnshape.vertexcount - 1) * 6) + 1] = -(ypos - (WINDOW_Y / 2)) / (WINDOW_Y / 2);//y
 				if (currentLayer == -1) {//No layer set, default to zero
-					vertices[((points - 1) * 6) + 2] = 0;//z
+					drawnshape.vertices[((drawnshape.vertexcount - 1) * 6) + 2] = 0;//z
 				} else {
-					vertices[((points - 1) * 6) + 2] = userLayerNames[currentLayer].depth;//z
+					drawnshape.vertices[((drawnshape.vertexcount - 1) * 6) + 2] = userLayerNames[currentLayer].depth;//z
 				}
-				vertices[((points - 1) * 6) + 3] = red;//red
-				vertices[((points - 1) * 6) + 4] = green;//green
-				vertices[((points - 1) * 6) + 5] = blue;//blue
+				drawnshape.vertices[((drawnshape.vertexcount - 1) * 6) + 3] = red;//red
+				drawnshape.vertices[((drawnshape.vertexcount - 1) * 6) + 4] = green;//green
+				drawnshape.vertices[((drawnshape.vertexcount - 1) * 6) + 5] = blue;//blue
 				//end of storing data
 
 			}
@@ -404,44 +358,41 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			//VERTEX DELETION
 			else if (processingClick == 2) {//Right click deletes vertices
 				processingClick = 0;//Reset the click
-				int vertToDelete = closestVert(drawnshape, points, window);//Find the closest vertice to the click
+				int vertToDelete = closestVert(drawnshape, drawnshape.vertexcount, window);//Find the closest vertice to the click
 				
 
 
-				deleteVertice(&drawnshape, vertToDelete, points);
+				deleteVertice(&drawnshape, vertToDelete, drawnshape.vertexcount);
 				
-				points--;//We got rid of a point
-				vertices = realloc(vertices, VERTEX_SIZE * points);//can re-allocate memory again, not strictly needed but oh well prevents garbage entries
-				drawnshape.vertices = vertices;
-				glBufferData(GL_ARRAY_BUFFER, points * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);//Reallocate all the memory used by opengl
+				drawnshape.vertices = realloc(drawnshape.vertices, VERTEX_SIZE * drawnshape.vertexcount);//can re-allocate memory again, not strictly needed but oh well prevents garbage entries
+				glBufferData(GL_ARRAY_BUFFER, drawnshape.vertexcount * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);//Reallocate all the memory used by opengl
 
 				
 
 				//now we have removed the vertice, updated openGl, now we have to re-arrange any indices.
 				//The way this will be done: Look at each group of three indices (Triangle) and if any of the three reference it REMOVE THEM and shift everything over.
-				for (int currentThree = 0; currentThree < totalIndices; currentThree = currentThree + 3) {//Run through all indices 3 at a time
-					if ((indices[currentThree] == vertToDelete) || (indices[currentThree + 1] == vertToDelete) || (indices[currentThree + 2] == vertToDelete)) {//Do any of the three point to the removed vertex?
-						if (currentThree == totalIndices - 3) {//Is this the last trio of index entries? Because if so we just need to cut the memory off
-							indices = realloc(indices, IND_SIZE * totalIndices);//Just chop it off
+				for (int currentThree = 0; currentThree < drawnshape.indexcount; currentThree = currentThree + 3) {//Run through all indices 3 at a time
+					if ((drawnshape.indices[currentThree] == vertToDelete) || (drawnshape.indices[currentThree + 1] == vertToDelete) || (drawnshape.indices[currentThree + 2] == vertToDelete)) {//Do any of the three point to the removed vertex?
+						if (currentThree == drawnshape.indexcount - 3) {//Is this the last trio of index entries? Because if so we just need to cut the memory off
+							drawnshape.indices = realloc(drawnshape.indices, IND_SIZE * drawnshape.indexcount);//Just chop it off
 						}else{
-							for (int counter = currentThree; counter < totalIndices - 3; counter += 3) {//Shift everything back a trio overwriting the useless entry
-								indices[counter] = indices[counter + 3];
-								indices[counter + 1] = indices[counter + 4];
-								indices[counter + 2] = indices[counter + 5];
+							for (int counter = currentThree; counter < drawnshape.indexcount - 3; counter += 3) {//Shift everything back a trio overwriting the useless entry
+								drawnshape.indices[counter] = drawnshape.indices[counter + 3];
+								drawnshape.indices[counter + 1] = drawnshape.indices[counter + 4];
+								drawnshape.indices[counter + 2] = drawnshape.indices[counter + 5];
 							}
 							currentThree = currentThree - 3;//Just back this up to make sure we dont skip any, because if it goes entry 1, 2, 3 and we remove 1 it becomes 2, 3, 3 with the last 3 being cutoff but we're now in POSITION 2, past 2
-							indices = realloc(indices, IND_SIZE * totalIndices);//Then chop off the duplicate end
+							drawnshape.indices = realloc(drawnshape.indices, IND_SIZE * drawnshape.indexcount);//Then chop off the duplicate end
 						}
-						totalIndices = totalIndices - 3;//We have removed a trio of entries so keep track of it
+						drawnshape.indexcount = drawnshape.indexcount - 3;//We have removed a trio of entries so keep track of it
 					}
 				}
 
-				for (int current = 0; current < totalIndices; current++) {//Run through all indices that remain and if any were referencing a vertex past the deleted one, lower the value they point to
-					if (indices[current] > vertToDelete) {//The reason for this is because if we have vertex 0, 1, 2 ,3 ,4 and remove 2, 3 becomes 2, 4 becomes 3 and we need the pointer to 4 to point to 3
-						indices[current] --;
+				for (int current = 0; current < drawnshape.indexcount; current++) {//Run through all indices that remain and if any were referencing a vertex past the deleted one, lower the value they point to
+					if (drawnshape.indices[current] > vertToDelete) {//The reason for this is because if we have vertex 0, 1, 2 ,3 ,4 and remove 2, 3 becomes 2, 4 becomes 3 and we need the pointer to 4 to point to 3
+						drawnshape.indices[current] --;
 					}
 				}	
-				drawnshape.indices = indices;
 
 			//END OF VERTEX DELETION
 			}
@@ -451,14 +402,12 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 
 			//CREATE SHAPEDATA IF WE CREATE A VERTEX
-			if (points == 1) {//If we have our first point, create the actual data in opengl for it
-				drawnshape = createShape(vertices, indices, points * VERTEX_SIZE, points * IND_SIZE, 1);
+			if (drawnshape.vertexcount == 1) {//If we have our first point, create the actual data in opengl for it
+				drawnshape = createShape(drawnshape.vertices, drawnshape.indices, drawnshape.vertexcount, drawnshape.indexcount, 1);
 			}
 			//OTHERWISE UPDATE THE SHAPE
-			else if(points > 1) {//BUG Potential, if you place one point and try to move it drawnshape wont have the updated info, MAYBE
-				drawnshape.vertices = vertices;
-				//drawnshape.indices = indices;
-				glBufferData(GL_ARRAY_BUFFER, points * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
+			else if(drawnshape.vertexcount > 1) {//BUG Potential, if you place one point and try to move it drawnshape wont have the updated info, MAYBE
+				glBufferData(GL_ARRAY_BUFFER, drawnshape.vertexcount * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
 				//glBufferData(GL_ELEMENT_ARRAY_BUFFER, points * IND_SIZE, drawnshape.indices, GL_DYNAMIC_DRAW);
 			}
 
@@ -482,7 +431,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
 						
 
-					for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+					for (int counter = 0; counter < drawnshape.vertexcount; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
 
 						float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
 						if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
@@ -550,7 +499,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
 
-				for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+				for (int counter = 0; counter < drawnshape.vertexcount; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
 
 					float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
 					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
@@ -562,11 +511,10 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 				//Now we have the closest point, so make a temp index out of it.
 				//BUG CURRENTLY SAVES INDICES EVEN IF NOT  FULLY CREATED. NEEDS TO GATHER THREE THEN SAVE ALL THREE AT ONCE
-				totalIndices++;
+				drawnshape.indexcount++;
 					
-				indices = realloc(indices, sizeof(unsigned int) * totalIndices);//Grab more memory to store em in
-				indices[totalIndices - 1] = closestPointNumber;
-				drawnshape.indices = indices;
+				drawnshape.indices = realloc(drawnshape.indices, sizeof(unsigned int) * drawnshape.indexcount);//Grab more memory to store em in
+				drawnshape.indices[drawnshape.indexcount - 1] = closestPointNumber;
 
 				} else if (processingClick == 2) {//Right click. Does nothing at the moment
 					processingClick = 0;
@@ -592,7 +540,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
 
-				for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+				for (int counter = 0; counter < drawnshape.vertexcount; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
 
 					double currentDistance = distanceTwoDD(drawnshape.vertices[counter * VERTEX_LENGTH], xy[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
 					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
@@ -910,9 +858,6 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				int layerheight = userLayerNames[counter].depth;//The z value we need to remove points on
 
 
-				for (int current = 0; current < points; current++) {//Run through each vertice to check the z value to see if its on the same layer so as to remove it.
-
-				}
 
 
 
@@ -947,14 +892,15 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 
 		glEnable(GL_DEPTH_TEST);
-		if (points > 0) {//Make sure we have stuff to draw...
+		if (drawnshape.vertexcount > 0) {//Make sure we have stuff to draw...
 			//Draw our new stuff
 			//glPointSize(10.0f);
 			glBindVertexArray(drawnshape.VAO);
 			if (drawVertices == 1) {
-				glDrawArrays(GL_POINTS, 0, points);
+				glDrawArrays(GL_POINTS, 0, drawnshape.vertexcount);
 			}
-			glDrawElements(GL_TRIANGLES, totalIndices, GL_UNSIGNED_INT, drawnshape.indices);
+			printf("%d\n", drawnshape.vertexcount);
+			glDrawElements(GL_TRIANGLES, drawnshape.indexcount, GL_UNSIGNED_INT, drawnshape.indices);
 			glBindVertexArray(0);
 			//End of drawing new stuff
 		}
