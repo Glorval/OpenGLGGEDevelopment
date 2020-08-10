@@ -130,6 +130,9 @@ int main()
     glPointSize(10.0f);
     while (!glfwWindowShouldClose(window)) {
         alldata = mainLoop(alldata);
+        if (alldata.ending == 1) {
+            break;
+        }
         alldata.waitingonconsole = 0;
     }
 
@@ -145,6 +148,13 @@ int main()
 
 
 struct mainloopData mainLoop(struct mainloopData mainData) {
+    //check to see if we need to close
+    if (glfwWindowShouldClose(window)) {
+        glfwTerminate();
+        struct mainloopData ending;
+        ending.ending = 1;
+        return(ending);
+    }
     float timeAtStart = glfwGetTime();
     if (mainData.proecessinputelsewhere == 0) {//Process current input IF WE ARE ALLOWED
         inputProc(window);

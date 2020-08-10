@@ -11,7 +11,7 @@
 
 #define DEPTH_ADJUSTER 20000//How much to divide user input by when making 2d objects and layering
 
-#define CHAR_NUM_TO_NUM (int) '0' - 1
+#define AdjustCharToArrayInt (int) '0' - 1
 
 
 
@@ -220,9 +220,9 @@ int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window) {
 
 
 
-int processingClick = 0;
-//double mouseX, mouseY;
+int processingClick = 0;//Sets to 1 for left click, sets to 2 for right click. ALWAYS SET TO ZERO IF YOURE GOING TO CHECK IT
 
+//Used to get mouse clicks
 void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 {
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
@@ -236,12 +236,43 @@ void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 }
 
 
-void deleteVertice(struct ShapeData* givenShape, int vert) {
+//Deletes given vertice and all index entries pointing to it
+void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL) {
 	for (int currentvert = vert * VERTEX_LENGTH; currentvert < givenShape->vertexcount * VERTEX_LENGTH; currentvert += VERTEX_LENGTH) {//Run through all vertices at and past the given one
 		for (int swapsies = 0; swapsies < VERTEX_LENGTH; swapsies++) {//because then we run through and copy the next vertice into the current one, overwriting the one to be deleted
 			givenShape->vertices[currentvert + swapsies] = givenShape->vertices[currentvert + swapsies + VERTEX_LENGTH];
 		}
 	}
+
+	if (updateOpenGL) {//Do we update opengl from in here?
+		glBufferData(GL_ARRAY_BUFFER, givenShape->vertexcount * VERTEX_SIZE, givenShape->vertices, GL_DYNAMIC_DRAW);//Reallocate all the memory used by opengl
+	}
+
+
+	for (int currentThree = 0; currentThree < givenShape->indexcount; currentThree = currentThree + 3) {//Run through all indices 3 at a time
+		if ((givenShape->indices[currentThree] == vert) || (givenShape->indices[currentThree + 1] == vert) || (givenShape->indices[currentThree + 2] == vert)) {//Do any of the three point to the removed vertex?
+			if (currentThree == givenShape->indexcount - 3) {//Is this the last trio of index entries? Because if so we just need to cut the memory off
+				givenShape->indices = realloc(givenShape->indices, IND_SIZE * givenShape->indexcount);//Just chop it off
+			}else{
+				for (int counter = currentThree; counter < givenShape->indexcount - 3; counter += 3) {//Shift everything back a trio overwriting the useless entry
+					givenShape->indices[counter] = givenShape->indices[counter + 3];
+					givenShape->indices[counter + 1] = givenShape->indices[counter + 4];
+					givenShape->indices[counter + 2] = givenShape->indices[counter + 5];
+				}
+				currentThree = currentThree - 3;//Just back this up to make sure we dont skip any, because if it goes entry 1, 2, 3 and we remove 1 it becomes 2, 3, 3 with the last 3 being cutoff but we're now in POSITION 2, past 2
+				givenShape->indices = realloc(givenShape->indices, IND_SIZE * givenShape->indexcount);//Then chop off the duplicate end
+			}
+			givenShape->indexcount = givenShape->indexcount - 3;//We have removed a trio of entries so keep track of it
+		}
+	}
+
+	for (int current = 0; current < givenShape->indexcount; current++) {//Run through all indices that remain and if any were referencing a vertex past the deleted one, lower the value they point to
+		if (givenShape->indices[current] > vert) {//The reason for this is because if we have vertex 0, 1, 2 ,3 ,4 and remove 2, 3 becomes 2, 4 becomes 3 and we need the pointer to 4 to point to 3
+			givenShape->indices[current] --;
+		}
+				
+	}	
+
 	givenShape->vertices = realloc(givenShape->vertices, givenShape->vertexcount * VERTEX_SIZE);//'lower' the memory assigned to the array
 	givenShape->vertexcount--;//we deleted a vertice, so keep track of it
 }
@@ -251,7 +282,6 @@ void deleteVertice(struct ShapeData* givenShape, int vert) {
 
 //Plan for how it will work: Get all the vertices while rendering them as points, then the user clicks on pairs of 3 vertices to connect them as a triangle.  
 //Lastly the user should be able to click a vertex and then have it follow the mouse until they click again, and a way to switch between these 3 modes of 'vector creation' 'vector connection' and 'vector changing'
-
 struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	printf("Now drawing a shape.\n\n\n");
 	
@@ -287,8 +317,6 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	//END OF USED FOR VERTEX MOVING
 
 
-
-	
 
 	struct ShapeData drawnshape;//The structure that we will return and render from
 	drawnshape.vertices = malloc(sizeof(float));//Initalize each
@@ -358,42 +386,11 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			//VERTEX DELETION
 			else if (processingClick == 2) {//Right click deletes vertices
 				processingClick = 0;//Reset the click
+
+
 				int vertToDelete = closestVert(drawnshape, drawnshape.vertexcount, window);//Find the closest vertice to the click
+				deleteVertice(&drawnshape, vertToDelete, drawnshape.vertexcount, 1);
 				
-
-
-				deleteVertice(&drawnshape, vertToDelete, drawnshape.vertexcount);
-				
-				drawnshape.vertices = realloc(drawnshape.vertices, VERTEX_SIZE * drawnshape.vertexcount);//can re-allocate memory again, not strictly needed but oh well prevents garbage entries
-				glBufferData(GL_ARRAY_BUFFER, drawnshape.vertexcount * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);//Reallocate all the memory used by opengl
-
-				
-
-				//now we have removed the vertice, updated openGl, now we have to re-arrange any indices.
-				//The way this will be done: Look at each group of three indices (Triangle) and if any of the three reference it REMOVE THEM and shift everything over.
-				for (int currentThree = 0; currentThree < drawnshape.indexcount; currentThree = currentThree + 3) {//Run through all indices 3 at a time
-					if ((drawnshape.indices[currentThree] == vertToDelete) || (drawnshape.indices[currentThree + 1] == vertToDelete) || (drawnshape.indices[currentThree + 2] == vertToDelete)) {//Do any of the three point to the removed vertex?
-						if (currentThree == drawnshape.indexcount - 3) {//Is this the last trio of index entries? Because if so we just need to cut the memory off
-							drawnshape.indices = realloc(drawnshape.indices, IND_SIZE * drawnshape.indexcount);//Just chop it off
-						}else{
-							for (int counter = currentThree; counter < drawnshape.indexcount - 3; counter += 3) {//Shift everything back a trio overwriting the useless entry
-								drawnshape.indices[counter] = drawnshape.indices[counter + 3];
-								drawnshape.indices[counter + 1] = drawnshape.indices[counter + 4];
-								drawnshape.indices[counter + 2] = drawnshape.indices[counter + 5];
-							}
-							currentThree = currentThree - 3;//Just back this up to make sure we dont skip any, because if it goes entry 1, 2, 3 and we remove 1 it becomes 2, 3, 3 with the last 3 being cutoff but we're now in POSITION 2, past 2
-							drawnshape.indices = realloc(drawnshape.indices, IND_SIZE * drawnshape.indexcount);//Then chop off the duplicate end
-						}
-						drawnshape.indexcount = drawnshape.indexcount - 3;//We have removed a trio of entries so keep track of it
-					}
-				}
-
-				for (int current = 0; current < drawnshape.indexcount; current++) {//Run through all indices that remain and if any were referencing a vertex past the deleted one, lower the value they point to
-					if (drawnshape.indices[current] > vertToDelete) {//The reason for this is because if we have vertex 0, 1, 2 ,3 ,4 and remove 2, 3 becomes 2, 4 becomes 3 and we need the pointer to 4 to point to 3
-						drawnshape.indices[current] --;
-					}
-				}	
-
 			//END OF VERTEX DELETION
 			}
 			//END OF CLICK REGISTERING
@@ -669,48 +666,40 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				if (layersRemain >= 0) {//We have at least one layer remaining
 
 					//NAMING THE LAYER
-					printf("What would you like to name this layer?   ");
-					char input[25];
-					int current = 0;
-					memset(input, '\0', 25);
-					glfwSetKeyCallback(window, enterDetector);
-					handlingLastPress = 0;//Clear this before we head in
-					while (1) {//Keep looping here until we get an 'enter' press
-						glfwPollEvents();
-						if (handlingLastPress) {
-							handlingLastPress = 0;
-							input[current] = lastPressedKey;
-							printf("%c", lastPressedKey);
-							current++;							
-						}
-						if (enterDetection == 1) {
-							enterDetection = 0;//We handled it
-							break;//and enter is 'we are done here'
-						}
-					}
-					printf("\n\n");
-					glfwSetKeyCallback(window, NULL);
-					userLayerNames[layersRemain].name = malloc(sizeof(char) * 25);
-					strcpy(userLayerNames[layersRemain].name, input);
+					printf("What would you like to name this layer? 24 Character Max.   ");
+
+					userLayerNames[layersRemain].name = malloc(sizeof(char) * 25);//Give it some memory
+					typing(window, 1, 1, userLayerNames[layersRemain].name);//Get some typing input and save it to the name
+					printf("\n\n");//add some spacing
 					//END OF NAMING THE LAYER
 
 
 
-
+					//GET LAYER NUMBER
 					printf("What depth would you like to make it? 0 - 9.    ");
 
-					while (1) {//Keep looping here until we get a number
-						glfwPollEvents();
-						if (handlingLastPress) {
-							handlingLastPress = 0;
-							userLayerNames[layersRemain].depth = (float) lastPressedKey - (float)'0';
-							printf("%c\n", lastPressedKey);
-							if (userLayerNames[layersRemain].depth != 0) {
-								userLayerNames[layersRemain].depth = userLayerNames[layersRemain].depth/DEPTH_ADJUSTER;
+					while (1) {//while loop because we might get invalid depth from user
+						int validdepth = 1;//variable to see if we got a valid depth
+
+						userLayerNames[layersRemain].depth = (float)keyReader(window, 1) - '0';//Get the number the user inputs as a number rather than a character
+						userLayerNames[layersRemain].depth = userLayerNames[layersRemain].depth / DEPTH_ADJUSTER;//then adjust the number to get it really smol so as to not look 3d
+
+						for (int counter = 0; counter < layersRemain; counter++) {//Run through all the other layers and see if one is already on this height
+							if (fabs(userLayerNames[layersRemain].depth - userLayerNames[counter].depth) < 0.00000001) {//if any are on the height invalidate the run
+								validdepth = 0; 
+								printf("Not a valid layer height, already taken.\n");
+								break;//and break out of the for loop to save time
+								
 							}
+						}
+						if (validdepth == 1) {
 							break;
 						}
 					}
+					
+
+
+					//END OF GETTING LAYER NUMBER
 					
 
 
@@ -733,21 +722,10 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					counter++;
 				}
 
-				
-				handlingLastPress = 0;//Make sure its clear
-				while (1) {//Wait until we get a key
-					glfwPollEvents();
-					if (handlingLastPress == 1) {
-						handlingLastPress = 0;//clear it
-						//printf("%c", lastPressedKey);
-						break;
-					}
-				}
+				waitForKeyPress(window, 1);
 
 				//We have the selected layer now (Hopefully) so we can select it
-				
-				currentLayer = (int) lastPressedKey - CHAR_NUM_TO_NUM;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
-				printf("%d\n", currentLayer);
+				currentLayer = (int) lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
 				printf("Selected Layer: %s\n\n", userLayerNames[currentLayer].name);
 
 				mode = VERT_CREATE;//Back out of menu now that we are done here.
@@ -777,7 +755,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				}
 				//Now we have a number keypress to select it
 
-				currentLayer = (int)lastPressedKey - CHAR_NUM_TO_NUM;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
+				currentLayer = (int)lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
 				printf("%d\n", currentLayer);
 				printf("Selected Layer: %s\n\n", userLayerNames[currentLayer].name);
 
@@ -846,18 +824,14 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 					counter++;
 				}
 
-				handlingLastPress = 0;//Make sure its clear
-				while (1) {//Wait until we get a key
-					glfwPollEvents();
-					if (handlingLastPress == 1) {
-						handlingLastPress = 0;//clear it
-						break;
-					}
+				waitForKeyPress(window, 1);
+				
+				//Now we have a number keypress to select it then delete it
+				int layerheight = userLayerNames[lastPressedKey - AdjustCharToArrayInt].depth;//The z value we need to remove points on
+
+				for (int current = 0; current < drawnshape.vertexcount; current++) {//Run through each vertice and see if we need to delete it.
+
 				}
-				//Now we have a number keypress to delete it
-				int layerheight = userLayerNames[counter].depth;//The z value we need to remove points on
-
-
 
 
 
@@ -899,7 +873,6 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			if (drawVertices == 1) {
 				glDrawArrays(GL_POINTS, 0, drawnshape.vertexcount);
 			}
-			printf("%d\n", drawnshape.vertexcount);
 			glDrawElements(GL_TRIANGLES, drawnshape.indexcount, GL_UNSIGNED_INT, drawnshape.indices);
 			glBindVertexArray(0);
 			//End of drawing new stuff
@@ -911,7 +884,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 		//MODE SELECTOR CODE
 
-		//create mode
+		//create/delete mode
 		if (lastPressedKey == '1' && handlingLastPress){
 			handlingLastPress = 0;//Dealt with keypress
 			if(mode != VERT_CREATE){
@@ -992,8 +965,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		//GLOBAL VAR RESETS
 
 
-
-
+		
 
 		//UPDATE THE ENTIRE REST OF THE PROGRAM
 		maindata.proecessinputelsewhere = 1;
@@ -1022,7 +994,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	printf("Done\n");
-	return(drawnshape);
+	//return(drawnshape);
 
 
 }

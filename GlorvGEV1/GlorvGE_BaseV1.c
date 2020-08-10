@@ -160,6 +160,7 @@ GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
 
 	lastPressedKey = 0;
 	lastPressedTime = 0;
+	lastSpecialPressTime = 0;
 	handlingLastPress = 0;
 	enterDetection = 0;
 	//End of Initialization of Global Variables
@@ -191,13 +192,39 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
 //Is used to detect when the enter key is hit, useful for end of typing
 void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (key == GLFW_KEY_ENTER) {
-		enterDetection = 1;
+		if (lastSpecialPressTime < glfwGetTime() - .2) {//prevents enter spamming between calls
+			lastSpecialPressTime = glfwGetTime();
+			enterDetection = 1;
+		}
 	}
 }
 
 
+
+
+
+void waitForKeyPress(GLFWwindow* window, int display) {
+	handlingLastPress = 0;
+	while (1) {
+		glfwPollEvents();
+		if (handlingLastPress) {
+			if (display) {
+				printf("%c", lastPressedKey);
+			}
+			break;
+		}
+	}
+}
+
+
+
+
+//Warning: Will stay in function until keypress. DO NOT USE FOR ONE OFF KEYPRESS
+//Used as a singluar function to return individual pressed keys until enter is hit, display is whether or not to print to console as typing.
 char keyReader(GLFWwindow* window, int display) {
 	glfwSetKeyCallback(window, enterDetector);
+	glfwPollEvents();//Do this to trigger any remnants of enter pressing
+	enterDetection = 0;//Clear this before we head in
 	handlingLastPress = 0;//Clear this before we head in
 	while (1) {//Keep looping here until we get a keypress, then report it
 		glfwPollEvents();
@@ -216,4 +243,31 @@ char keyReader(GLFWwindow* window, int display) {
 		}
 	}
 	
+}
+
+
+
+
+
+//Warning, will stay in function until enter is hit
+//Used to get typing input reliably, display displays it, nullterm keeps the \0 at the end of the string.
+void typing(GLFWwindow* window, int display, int nullterm, char* string) {
+	glfwPollEvents();
+	char typedchar;
+	unsigned int current = 0;//keep track of where we are in our array
+	handlingLastPress = 0;//Clear this just in case
+	while (1) {//While we dont have an enter press loop again and again
+		typedchar = keyReader(window, display);//get the next character
+		if (typedchar == '\0') {//if they hit enter it returns null term.
+			if (nullterm) {//We want the null term so copy this last character
+				string[current] = typedchar;
+				break;//then once we save it break out of the loop because we're done here
+			} else {//We dont want the null term so break before saving
+				break;
+			}
+		}
+		string[current] = typedchar;//copy the data over
+		current++;//keep track of where we are
+		//returnText = realloc(returnText, sizeof(char) * current);//Give more memory
+	}
 }

@@ -42,6 +42,8 @@ int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window);
 void drawShapeCallback(GLFWwindow* window, int button, int action, int mods);
 
 
+//Deletes given vertice and all index entries pointing to it
+void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL);
 
 
 //Creates and returns a shape from user drawing.
@@ -50,6 +52,6 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata);
 
 
 //User input
-void character_callback(GLFWwindow* window, unsigned int codepoint);
-void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
-char keyReader(GLFWwindow* window, int display);
+//void character_callback(GLFWwindow* window, unsigned int codepoint);
+//void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
+//char keyReader(GLFWwindow* window, int display);
