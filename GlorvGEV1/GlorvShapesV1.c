@@ -7,7 +7,7 @@
 #define VERTEX_LENGTH 6//The length of the vertices, 6 entries per,  x/y/z r/g/b
 #define VERTEX_SIZE VERTEX_LENGTH * sizeof(float)//The size in bytes of a vertex, currently 6 because x/y/z r/g/b
 
-
+#define EQFLOAT 0.0000001
 
 #define DEPTH_ADJUSTER 20000//How much to divide user input by when making 2d objects and layering
 
@@ -236,13 +236,16 @@ void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
 }
 
 
-//Deletes given vertice and all index entries pointing to it
+//Deletes given vertice and all index entries pointing to it. Vert is in nonadjusted position, so not 0, 6, 12, its just in vertex 0, 1, 2, 3 etc
 void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL) {
 	for (int currentvert = vert * VERTEX_LENGTH; currentvert < givenShape->vertexcount * VERTEX_LENGTH; currentvert += VERTEX_LENGTH) {//Run through all vertices at and past the given one
 		for (int swapsies = 0; swapsies < VERTEX_LENGTH; swapsies++) {//because then we run through and copy the next vertice into the current one, overwriting the one to be deleted
 			givenShape->vertices[currentvert + swapsies] = givenShape->vertices[currentvert + swapsies + VERTEX_LENGTH];
 		}
 	}
+
+	givenShape->vertices = realloc(givenShape->vertices, givenShape->vertexcount * VERTEX_SIZE);//'lower' the memory assigned to the array
+	givenShape->vertexcount--;//we deleted a vertice, so keep track of it
 
 	if (updateOpenGL) {//Do we update opengl from in here?
 		glBufferData(GL_ARRAY_BUFFER, givenShape->vertexcount * VERTEX_SIZE, givenShape->vertices, GL_DYNAMIC_DRAW);//Reallocate all the memory used by opengl
@@ -251,30 +254,28 @@ void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL) {
 
 	for (int currentThree = 0; currentThree < givenShape->indexcount; currentThree = currentThree + 3) {//Run through all indices 3 at a time
 		if ((givenShape->indices[currentThree] == vert) || (givenShape->indices[currentThree + 1] == vert) || (givenShape->indices[currentThree + 2] == vert)) {//Do any of the three point to the removed vertex?
-			if (currentThree == givenShape->indexcount - 3) {//Is this the last trio of index entries? Because if so we just need to cut the memory off
-				givenShape->indices = realloc(givenShape->indices, IND_SIZE * givenShape->indexcount);//Just chop it off
-			}else{
+			if (currentThree != givenShape->indexcount - 3) {//Make sure that we aren't on the final three, if we are its just time to chop the memory off already
 				for (int counter = currentThree; counter < givenShape->indexcount - 3; counter += 3) {//Shift everything back a trio overwriting the useless entry
 					givenShape->indices[counter] = givenShape->indices[counter + 3];
 					givenShape->indices[counter + 1] = givenShape->indices[counter + 4];
 					givenShape->indices[counter + 2] = givenShape->indices[counter + 5];
 				}
 				currentThree = currentThree - 3;//Just back this up to make sure we dont skip any, because if it goes entry 1, 2, 3 and we remove 1 it becomes 2, 3, 3 with the last 3 being cutoff but we're now in POSITION 2, past 2
-				givenShape->indices = realloc(givenShape->indices, IND_SIZE * givenShape->indexcount);//Then chop off the duplicate end
 			}
 			givenShape->indexcount = givenShape->indexcount - 3;//We have removed a trio of entries so keep track of it
 		}
 	}
+	givenShape->indices = realloc(givenShape->indices, IND_SIZE * givenShape->indexcount);//Re-allocate the memory now that we're done shifting
+
+
 
 	for (int current = 0; current < givenShape->indexcount; current++) {//Run through all indices that remain and if any were referencing a vertex past the deleted one, lower the value they point to
 		if (givenShape->indices[current] > vert) {//The reason for this is because if we have vertex 0, 1, 2 ,3 ,4 and remove 2, 3 becomes 2, 4 becomes 3 and we need the pointer to 4 to point to 3
 			givenShape->indices[current] --;
 		}
-				
 	}	
 
-	givenShape->vertices = realloc(givenShape->vertices, givenShape->vertexcount * VERTEX_SIZE);//'lower' the memory assigned to the array
-	givenShape->vertexcount--;//we deleted a vertice, so keep track of it
+	
 }
 
 
@@ -827,12 +828,33 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 				waitForKeyPress(window, 1);
 				
 				//Now we have a number keypress to select it then delete it
-				int layerheight = userLayerNames[lastPressedKey - AdjustCharToArrayInt].depth;//The z value we need to remove points on
+				int currentlayer = lastPressedKey - AdjustCharToArrayInt;
+				float layerheight = userLayerNames[currentlayer].depth;//The z value we need to remove points on
 
-				for (int current = 0; current < drawnshape.vertexcount; current++) {//Run through each vertice and see if we need to delete it.
+				for (int current = 0; current < drawnshape.vertexcount; current++) {//Run through each vertice and see if we need to delete it
+
+					if (fabs(drawnshape.vertices[(current * VERTEX_LENGTH) + 2] - layerheight) < 0.0000001) {//Is this vertice on the correct z value to be on this layer?
+						//if so we need to delete it, but then also pull back current so as to not skip any vertices (Because if we delete it all vertices get shifted back 1
+						deleteVertice(&drawnshape, current, 0);
+						current--;
+					}
 
 				}
 
+				//Since we aren't reallocating in the delete vertice, as that would potentially be a crapton of updates, update now. 	
+				glBufferData(GL_ARRAY_BUFFER, drawnshape.vertexcount * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
+				
+				counter = currentlayer;//Start at the given layer
+				while (userLayerNames[counter].name != NULL) {//Overwrite the current layer and then delete the last
+					if(userLayerNames[counter+1].name != NULL){
+						userLayerNames[counter].name = userLayerNames[counter + 1].name;
+						userLayerNames[counter].depth = userLayerNames[counter + 1].depth;
+					} else {
+						userLayerNames[counter].name = NULL;
+						userLayerNames[counter].depth = -10;
+					}
+					counter++;
+				}
 
 
 			}
@@ -922,7 +944,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 		} //vertex connect mode
 
-		//vertex delete
+		//vertex colour change
 		else if (lastPressedKey == '4' && handlingLastPress) {
 			handlingLastPress = 0;
 			time = glfwGetTime();
