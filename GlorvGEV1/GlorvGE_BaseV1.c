@@ -7,14 +7,6 @@ extern int Window_Y = 1080;
 
 
 
-
-
-
-
-
-
-
-
 struct ShaderStrings getShaderStrings() {
 
 
@@ -91,7 +83,7 @@ struct ShaderStrings getShaderStrings() {
 }
 
 
-void setupShaders() {
+int setupShaders() {
 	struct ShaderStrings shaderStrings = getShaderStrings();
 	//Vertex shader
 	int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -106,7 +98,7 @@ void setupShaders() {
 
 	//Link the two shaders
 	//unsigned int shaderProgram;
-	unsigned int shaderProgram = glCreateProgram();
+	int shaderProgram = glCreateProgram();
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
 	glLinkProgram(shaderProgram);
@@ -119,13 +111,14 @@ void setupShaders() {
 	//setup openGLs ability to read inputs
 
 	glUseProgram(shaderProgram);
+	return(shaderProgram);
 }
 
 
 
 
 
-GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
+struct Setupdata setupEVERYTHING(GLFWwindow* window) {
 	float SetupTime = 0;
 	//Load GLAD
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -153,8 +146,10 @@ GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
 	//Set the viewport
 	glViewport(0, 0, Window_X, Window_Y);
 	//
-	setupShaders();
 
+	struct Setupdata returndata;
+	returndata.shaderID = setupShaders();
+	returndata.window = window;
 
 	//Initialization of Global Variables
 
@@ -170,9 +165,10 @@ GLFWwindow* setupEVERYTHING(GLFWwindow* window) {
 
 
 
-
+	
+	
 	printf("Time taken to setup within SetupEverything = %f\n", glfwGetTime());
-	return(window);
+	return(returndata);
 }
 
 

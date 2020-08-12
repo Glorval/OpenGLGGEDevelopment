@@ -7,7 +7,7 @@
 #include <string.h>
 #include "GlorvMath.h"
 #include "GlorvShapesV1.h"
-
+#include "linearAlg.h"
 
 
 //Used in the main loop to keep track of all data, very important
@@ -22,6 +22,7 @@ struct mainloopData {
 };
 
 
+
 //Used with getShaderStrings to pull back two strings at once
 struct ShaderStrings {
 	char* vertexS;
@@ -31,11 +32,12 @@ struct ShaderStrings {
 //Used with creating shaps to keep track of VAO and VBO IDs
 struct ShapeData {
 	unsigned int VAO, VBO, EBO;//The vector buffer and vector array object IDs.
-	int vertexcount, indexcount;//The length of the vertice and indice arrays
+	int vertexcount, indexcount;//The amount of vertices/length of indices
 	float* vertices;//An array of all the vertices in groups of 3, x y z
 	unsigned int* indices;//An array of which vertices to render in groups of 3, point a, point b, point c
 	int* fulldata;//whether or not it has all data used, VAOs/VBOs filename etc.
 	char* filename;
+	Vector4 location;//The location of the object in space
 };
 //typedef struct ShapeData newShape;
 
@@ -46,7 +48,10 @@ struct MouseData {
 	double yposOnClick;
 };
 
-
+struct Setupdata {
+	GLFWwindow* window;
+	int shaderID;
+};
 
 
 
@@ -56,11 +61,11 @@ struct MouseData {
 struct ShaderStrings getShaderStrings();
 
 //One time set up for the shaders
-void setupShaders();
+int setupShaders();
 
 
 //Sets up Glad/GLFW, creates a window, loads openGL, sets up the shaders and returns a window pointer
-GLFWwindow* setupEVERYTHING(GLFWwindow* window);
+struct Setupdata setupEVERYTHING(GLFWwindow* window);
 
 
 struct mainloopData mainLoop(struct mainloopData mainData);

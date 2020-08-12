@@ -22,6 +22,9 @@
     <ClCompile Include="GlorvGEV1\GlorvMath.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GlorvGEV1\linearAlg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GlorvGEV1\GlorvGE_BaseV1.h">
@@ -31,6 +34,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="GlorvGEV1\GlorvMath.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GlorvGEV1\linearAlg.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

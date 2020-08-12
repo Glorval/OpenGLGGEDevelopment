@@ -42,7 +42,9 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 
 	if (saveAll == 1) {
 		Returns.fulldata = 1;
+		//Returns.indices = malloc(sizeof(unsigned int) * indSize);
 		Returns.indices = indices;
+		//Returns.vertices = malloc(sizeof(float) * vertSize);
 		Returns.vertices = vertices;
 		Returns.vertexcount = vertSize;
 		Returns.indexcount = indSize;
@@ -52,12 +54,12 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 }
 
 
-struct ShapeData createShapeFromFile(char vertFile[], char indFile[], int saveAll) {
+struct ShapeData createShapeFromFile(char filename[], int saveAll) {
 	char vertFileFixed[100] = "Objects/";
 	char indFileFixed[100] = "Objects/";
-	strcat(vertFileFixed, vertFile);
+	strcat(vertFileFixed, filename);
 	strcat(vertFileFixed, "Vertices.txt");
-	strcat(indFileFixed, indFile);
+	strcat(indFileFixed, filename);
 	strcat(indFileFixed, "Indices.txt");
 
 	//Vertex reading
@@ -88,9 +90,9 @@ struct ShapeData createShapeFromFile(char vertFile[], char indFile[], int saveAl
 			vertices = (float*)realloc(vertices, (10 + counter) * sizeof(float));//Hush, nobody cares if it fails
 		}
 	}
-	printf("Had to allocate %d bytes of memory for CreatShapeFromFile Vertices.\n", counter);
-	int vertSize = counter * sizeof(float);
-	vertices = (float*)realloc(vertices, vertSize);
+	printf("Had to allocate %d bytes of memory for CreateShapeFromFile Vertices.\n", counter);
+	int vertSize = counter / VERTEX_LENGTH;
+	vertices = (float*)realloc(vertices, vertSize * sizeof(float) * VERTEX_LENGTH);
 	fclose(verts);
 
 
@@ -127,8 +129,8 @@ struct ShapeData createShapeFromFile(char vertFile[], char indFile[], int saveAl
 		}
 	}
 	printf("Had to allocate %d bytes of memory for CreatShapeFromFile Indices.\n", counter);
-	int indSize = counter * sizeof(unsigned int);
-	indices = (unsigned int*)realloc(indices, indSize);
+	int indSize = counter;
+	indices = (unsigned int*)realloc(indices, indSize*sizeof(unsigned int));
 	fclose(inds);
 
 
@@ -984,8 +986,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		//END OF MODE SELECTOR
 
 
-		//GLOBAL VAR RESETS
-
+		
 
 		
 

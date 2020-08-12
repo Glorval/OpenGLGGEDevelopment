@@ -97,19 +97,24 @@ struct consoleReturns consoleInput(char input[100], struct mainloopData* alldata
 int main()
 {
    //SETUP
-    window = NULL;
-    window = setupEVERYTHING(window);
 
+    window = NULL;
+    struct Setupdata temp = setupEVERYTHING(window);
+    window = temp.window;
+    int shaderProgram = temp.shaderID;
 
     
     /*struct ShapeData shapeOne = createShapeFromFile("RectOne", "RectOne", 1);
     shapeOne.filename = calloc(50, sizeof(char));
     strcpy(&shapeOne.filename, "Test");
     saveShapeToFileStruct(shapeOne);*/
+
+
     glEnable(GL_DEPTH_TEST);
     printf("Time taken to Final End of Setup %f\n", glfwGetTime());
 
 
+    Vector4 veca = {1.0f, 1.0f, 1.0f, 1.0f};
 
 
 
@@ -126,8 +131,20 @@ int main()
     alldata.proecessinputelsewhere = 0;
     alldata.totalindices = 0;
     alldata.totalshapes = 0;
-    alldata.waitingonconsole = 1;
+    alldata.waitingonconsole = 0;
     glPointSize(10.0f);
+    //DEBUG STUFF
+    alldata.AllLoadedShapes = realloc(alldata.AllLoadedShapes, 1000);
+    alldata.AllLoadedShapes[0] = createShapeFromFile("RectOne",1);
+    alldata.totalshapes = 1;
+    glUseProgram(shaderProgram);
+    //glGetUniformfv(shaderProgram, "offset", &offsetlocation);
+    int offsetLocation = glGetUniformLocation(shaderProgram, "offset");
+    float offsets[] = {0.5, 0.0, 0.0, 0.0};
+    glUniform4fv(offsetLocation, 1, offsets);
+
+
+    //END OF DEBUG STUFF
     while (!glfwWindowShouldClose(window)) {
         alldata = mainLoop(alldata);
         if (alldata.ending == 1) {
@@ -162,18 +179,27 @@ struct mainloopData mainLoop(struct mainloopData mainData) {
     }
 
    
+    
+    
 
-    //glBindBuffer(GL_ARRAY_BUFFER, 0);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    //glBindVertexArray(0);
+
+   /* glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);*/
 
         
     //GL_TRIANGLE_FAN
 
     for(int counter = 0; counter < mainData.totalshapes; counter ++){
 
+
+        //glUseProgram(shaderProgram);
+        
+
         glBindVertexArray(mainData.AllLoadedShapes[counter].VAO);
-        glDrawElements(GL_TRIANGLE_STRIP, mainData.totalindices, GL_UNSIGNED_INT, mainData.AllLoadedShapes[counter].indices);
+        glDrawElements(GL_TRIANGLES, mainData.AllLoadedShapes[0].indexcount, GL_UNSIGNED_INT, mainData.AllLoadedShapes[counter].indices);
+        glDrawArrays(GL_POINTS, 0, mainData.AllLoadedShapes[counter].vertexcount);
+
 
     }
 

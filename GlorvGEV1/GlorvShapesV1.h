@@ -22,7 +22,7 @@ struct LayerNames {//Normal max length is 10 layers
 struct ShapeData createShape(float vertices[], unsigned int indices[], int vertSize, int indSize, int saveAll);
 
 //Used to create a shape that already exists as a file, this just loads the data from the file then sends to createShape
-struct ShapeData createShapeFromFile(char vertFile[], char indFile[], int saveAll);
+struct ShapeData createShapeFromFile(char filename[], int saveAll);
 
 //Saves given shape to filen, shape given by raw data.
 void saveShapeToFile(float vertices[], unsigned int indices, int vertSize, int indSize, char fileName);
