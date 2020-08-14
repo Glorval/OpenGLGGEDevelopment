@@ -53,5 +53,5 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID);
 
 //User input
 //void character_callback(GLFWwindow* window, unsigned int codepoint);
-//void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
+//void specialKeyDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
 //char keyReader(GLFWwindow* window, int display);

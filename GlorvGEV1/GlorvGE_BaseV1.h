@@ -88,9 +88,10 @@ int handlingLastPress;//Have we yet to check the last pressed key?
 //Is used to detect a keypress, also saves the pressed key to a varaible for later use
 void character_callback(GLFWwindow* window, unsigned int codepoint);
 
-//Is used to detect when the enter key is hit, useful for end of typing
-int enterDetection;
-void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
+// 1 = enter, 2 = backspace
+int specialPress;
+//Is used to detect when the enter or backspace key is hit, useful for end of typing and confirmations
+void specialKeyDetector(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 
 //Used to wait for a keypress, only useful for if you want to wait for a single input for yes/no, single number, etc.

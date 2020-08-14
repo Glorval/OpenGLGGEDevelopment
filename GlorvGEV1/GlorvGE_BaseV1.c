@@ -157,7 +157,7 @@ struct Setupdata setupEVERYTHING(GLFWwindow* window) {
 	lastPressedTime = 0;
 	lastSpecialPressTime = 0;
 	handlingLastPress = 0;
-	enterDetection = 0;
+	specialPress = 0;
 	//End of Initialization of Global Variables
 
 
@@ -185,12 +185,17 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
 }
 
 
-//Is used to detect when the enter key is hit, useful for end of typing
-void enterDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
+//Is used to detect when the enter key is hit, useful for end of typing. Also detects backspace
+void specialKeyDetector(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (key == GLFW_KEY_ENTER) {
 		if (lastSpecialPressTime < glfwGetTime() - .2) {//prevents enter spamming between calls
 			lastSpecialPressTime = glfwGetTime();
-			enterDetection = 1;
+			specialPress = 1;
+		}
+	} else if (key == GLFW_KEY_BACKSPACE) {
+		if (lastSpecialPressTime < glfwGetTime() - .2) {//prevents enter spamming between calls
+			lastSpecialPressTime = glfwGetTime();
+			specialPress = 2;
 		}
 	}
 }
@@ -219,9 +224,9 @@ void waitForKeyPress(GLFWwindow* window, int display) {
 //Used as a singluar function to return individual pressed keys until enter is hit, display is whether or not to print to console as typing.
 char keyReader(GLFWwindow* window, int display) {
 	glfwSetCharCallback(window, character_callback);//For tippy typing registration
-	glfwSetKeyCallback(window, enterDetector);
+	glfwSetKeyCallback(window, specialKeyDetector);
 	glfwPollEvents();//Do this to trigger any remnants of enter pressing
-	enterDetection = 0;//Clear this before we head in
+	specialPress = 0;//Clear this before we head in
 	handlingLastPress = 0;//Clear this before we head in
 	while (1) {//Keep looping here until we get a keypress, then report it
 		glfwPollEvents();
@@ -233,8 +238,8 @@ char keyReader(GLFWwindow* window, int display) {
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
 			return(lastPressedKey);
 		}
-		if (enterDetection) {//Enter means we're done here
-			enterDetection = 0;
+		if (specialPress) {//Enter means we're done here
+			specialPress = 0;
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
 			return('\0');
 		}

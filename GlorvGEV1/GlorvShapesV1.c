@@ -581,9 +581,55 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 
 			//End of processing left click
-		} else if (processingClick == 2) {//Right click copies the nearest colour
-			//TO DO
-		}
+			} else if (processingClick == 2) {//Right click copies the nearest colour
+				processingClick = 0;
+
+
+				//FIND CLOSEST POINT TO CLICK
+				double* xy = calloc(2, sizeof(double));
+				glfwGetCursorPos(window, &xy[0], &xy[1]);
+
+				xy[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
+				xy[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
+
+				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
+
+				for (int counter = 0; counter < drawnshape.vertexcount; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
+
+					double currentDistance = distanceTwoDD(drawnshape.vertices[counter * VERTEX_LENGTH], xy[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
+					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
+						closestDistance = currentDistance;
+						closestPointNumber = counter;
+					}
+
+				}//End of tracking left click, we have a point  now
+
+			
+				float tred = drawnshape.vertices[closestPointNumber + 3];
+				float tgreen = drawnshape.vertices[closestPointNumber + 4];
+				float tblue = drawnshape.vertices[closestPointNumber + 5];
+				printf("Copied colour: %f, %f, %f. Enter to confirm.", tred, tgreen, tblue);
+				glfwSetKeyCallback(window, specialKeyDetector);
+
+				while (1) {
+					glfwPollEvents();
+					if (specialPress == 1) {
+						specialPress = 0;
+						red = tred;
+						green = tgreen;
+						blue = tblue;
+						glfwSetKeyCallback(window, NULL);
+						printf("\nColours copied.\n");
+						break;
+					} else if (specialPress == 2 ) {
+						specialPress = 0;
+						glfwSetKeyCallback(window, NULL);
+						printf("\nCanceled.\n");
+						break;
+					}
+				}
+
+			}//END OF RIGHT CLICK
 
 
 
@@ -780,7 +826,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				char input[25];
 				int current = 0;
 				memset(input, '\0', 25);
-				glfwSetKeyCallback(window, enterDetector);
+				glfwSetKeyCallback(window, specialKeyDetector);
 				handlingLastPress = 0;//Clear this before we head in
 				while (1) {//Keep looping here until we get an 'enter' press
 					glfwPollEvents();
@@ -790,8 +836,8 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 						printf("%c", lastPressedKey);
 						current++;
 					}
-					if (enterDetection == 1) {
-						enterDetection = 0;//We handled it
+					if (specialPress == 1) {
+						specialPress = 0;//We handled it
 						break;//and enter is 'we are done here'
 					}
 				}
@@ -926,7 +972,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 			}
 			glDrawElements(GL_TRIANGLES, drawnshape.indexcount, GL_UNSIGNED_INT, drawnshape.indices);
 			glBindVertexArray(0);
-			glfwSwapBuffers(window);
+			//glfwSwapBuffers(window);
 			//End of drawing new stuff
 		}
 		
