@@ -25,10 +25,10 @@ struct ShapeData createShape(float vertices[], unsigned int indices[], int vertS
 struct ShapeData createShapeFromFile(char filename[], int saveAll);
 
 //Saves given shape to filen, shape given by raw data.
-void saveShapeToFile(float vertices[], unsigned int indices, int vertSize, int indSize, char fileName);
+void saveRawShapeToFile(float vertices[], unsigned int indices, int vertSize, int indSize, char fileName);
 
-//Saves given shape to filen, shape given by a shape structure.
-void saveShapeToFileStruct(struct ShapeData SaveShape);
+//Saves given shape to file, shape given by struct
+void saveShapeToFile(struct ShapeData savedata);
 
 
 
@@ -47,7 +47,7 @@ void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL);
 
 
 //Creates and returns a shape from user drawing.
-struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata);
+struct ShapeData drawShape(GLFWwindow* window, int shaderID);
 
 
 

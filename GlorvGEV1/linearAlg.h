@@ -3,6 +3,7 @@
 #include "GlorvGE_BaseV1.h"
 //Made by reddit user Shuall
 //Many thanccs to Shuall for the many hours (And the removal of impending doom as I get closer to 3d in openGL) saved for me
+
 typedef struct Matrix {
 	float m[16];
 } Matrix;
@@ -19,7 +20,9 @@ typedef union Vector4 {
 	struct {
 		float x, y, z, w;
 	};
-} Vector4;
+}Vector4;
+
+
 
 static const Vector4 X_AXIS = { {1, 0, 0, 0} };
 static const Vector4 Y_AXIS = { {0, 1, 0, 0} };
@@ -34,6 +37,8 @@ static const Matrix IDENTITY_MATRIX = { {
 	0, 0, 1, 0,
 	0, 0, 0, 1
 } };
+
+
 
 Matrix multiplymat4(const Matrix* m1, const Matrix* m2);
 Vector4 mulmatvec4(const Matrix* m, const Vector4* v);

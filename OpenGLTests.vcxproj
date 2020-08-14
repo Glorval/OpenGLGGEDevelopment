@@ -23,6 +23,7 @@
     <ProjectGuid>{158FCAB3-73CB-4CB5-A1B7-3D9617D94E48}</ProjectGuid>
     <RootNamespace>OpenGLTests</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>GDraw</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

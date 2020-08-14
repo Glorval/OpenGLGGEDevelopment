@@ -5,21 +5,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "linearAlg.h"
 #include "GlorvMath.h"
 #include "GlorvShapesV1.h"
-#include "linearAlg.h"
 
 
-//Used in the main loop to keep track of all data, very important
-struct mainloopData {
-	struct ShapeData* AllLoadedShapes;
-	int totalshapes;
-	long int sizeofshapes;
-	int totalindices;
-	int proecessinputelsewhere;
-	int waitingonconsole;
-	int ending;//Whether or not to end the program
-};
+
+
+
+////Used in the main loop to keep track of all data, very important
+//struct mainloopData {
+//	struct ShapeData AllLoadedShapes;
+//	int totalshapes;
+//	long int sizeofshapes;
+//	int totalindices;
+//	int proecessinputelsewhere;
+//	int waitingonconsole;
+//	int ending;//Whether or not to end the program
+//	int shaderID;
+//};
 
 
 
@@ -37,7 +41,8 @@ struct ShapeData {
 	unsigned int* indices;//An array of which vertices to render in groups of 3, point a, point b, point c
 	int* fulldata;//whether or not it has all data used, VAOs/VBOs filename etc.
 	char* filename;
-	Vector4 location;//The location of the object in space
+	float* location;//Array of 16 floats (Matrix) for the location of the object
+	struct LayerNames* ShapeLayers;//Used for 2d layering
 };
 //typedef struct ShapeData newShape;
 

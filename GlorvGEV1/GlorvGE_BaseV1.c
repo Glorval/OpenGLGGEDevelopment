@@ -218,6 +218,7 @@ void waitForKeyPress(GLFWwindow* window, int display) {
 //Warning: Will stay in function until keypress. DO NOT USE FOR ONE OFF KEYPRESS
 //Used as a singluar function to return individual pressed keys until enter is hit, display is whether or not to print to console as typing.
 char keyReader(GLFWwindow* window, int display) {
+	glfwSetCharCallback(window, character_callback);//For tippy typing registration
 	glfwSetKeyCallback(window, enterDetector);
 	glfwPollEvents();//Do this to trigger any remnants of enter pressing
 	enterDetection = 0;//Clear this before we head in
@@ -230,11 +231,13 @@ char keyReader(GLFWwindow* window, int display) {
 				printf("%c", lastPressedKey);
 			}
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
+			glfwSetCharCallback(window, NULL);//We're done so reset the callback
 			return(lastPressedKey);
 		}
 		if (enterDetection) {//Enter means we're done here
 			enterDetection = 0;
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
+			glfwSetCharCallback(window, NULL);//We're done so reset the callback
 			return('\0');
 		}
 	}

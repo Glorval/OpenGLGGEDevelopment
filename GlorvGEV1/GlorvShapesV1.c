@@ -13,6 +13,10 @@
 
 #define AdjustCharToArrayInt (int) '0' - 1
 
+//Objects/
+//Vertices.txt
+//Indices.txt
+//ObjData.txt
 
 
 struct ShapeData createShape(float vertices[], unsigned int indices[], int vertSize, int indSize, int saveAll) {
@@ -141,51 +145,60 @@ struct ShapeData createShapeFromFile(char filename[], int saveAll) {
 
 
 //Saves given shape to filen, shape given by raw data.
-void saveShapeToFile(float vertices[], unsigned int indices, int vertSize, int indSize, char fileName) {
-	char* token;
+void saveRawShapeToFile(float vertices[], unsigned int indices, int vertSize, int indSize, char fileName) {
+	//char* token;
 
 	char vertFile[100] = "Objects/";//Get to the right directory
 	strcat(vertFile, fileName);//Put the name of the file as the folder name
-	strcat(vertFile, "/Vertices.txt");//All vertice files are named this
-	FILE* vertSaveFile = fopen(vertFile, "w");//The place being written to is OurProgram/Objects/Filename/Vertices.txt
-	fputs(vertices, vertFile);
+	strcat(vertFile, "Vertices.txt");//All vertice files are named this
+	FILE* vertSaveFile = fopen(vertFile, "w");//The place being written to is OurProgram/Objects/FilenameVertices.txt
+	fputs(vertices, vertFile);//Write the data to the file
 
+	
+	char indfile[100] = "Objects/";//Get to the right directory
+	strcat(indfile, fileName);//Put the name of the file as the folder name
+	strcat(indfile, "Indices.txt");//All indice files are named this
+	FILE* indSaveFile = fopen(indfile, "w");//The place being written to is OurProgram/Objects/FilenameIndices.txt
+	fputs(indices, indfile);//Write the data to the file
 }
 
-
-
-
-//Saves given shape to filen, shape given by a shape structure.
-void saveShapeToFileStruct(struct ShapeData SaveShape) {
+//Saves given shape to filen, shape given by raw data.
+void saveShapeToFile(struct ShapeData savedata) {
 
 	char vertFile[100] = "Objects/";//Get to the right directory
-	strcat(vertFile, &SaveShape.filename);//Put the name of the file as the folder name
+	strcat(vertFile, savedata.filename);//Put the name of the file as the folder name
 	strcat(vertFile, "Vertices.txt");//All vertice files are named this
-	FILE* vertSaveFile = fopen(vertFile, "w");//The place being written to is OurProgram/Objects/Filename/Vertices.txt
-
-	for(int counter = 0; counter < SaveShape.vertexcount; counter++){
-		fprintf(vertSaveFile, "%f", SaveShape.vertices[counter]);
-		if (counter != SaveShape.vertexcount - 1) {
+	FILE* vertSaveFile = fopen(vertFile, "w");//The place being written to is OurProgram/Objects/FilenameVertices.txt
+	for (int counter = 0; counter < savedata.vertexcount; counter++) {
+		fprintf(vertSaveFile, "%f", savedata.vertices[counter]);//FIX Make it print in sets of three
+		if (counter != savedata.vertexcount - 1) {//Add a space so long as this isnt the last element
 			fprintf(vertSaveFile, " ");
 		}
 	}
+	fclose(vertSaveFile);
 
-	char indFile[100] = "Objects/";//Get to the right directory
-	strcat(indFile, &SaveShape.filename);//Put the name of the file as the folder name
-	strcat(indFile, "Indices.txt");//All vertice files are named this
-	FILE* indSaveFile = fopen(indFile, "w");//The place being written to is OurProgram/Objects/Filename/Vertices.txt
 
-	for (int counter = 0; counter < SaveShape.indexcount; counter++) {
-		fprintf(indSaveFile, "%u", SaveShape.indices[counter]);
-		if (counter != SaveShape.indexcount - 1) {
+	char indfile[100] = "Objects/";//Get to the right directory
+	strcat(indfile, savedata.filename);//Put the name of the file as the folder name
+	strcat(indfile, "Indices.txt");//All indice files are named this
+	FILE* indSaveFile = fopen(indfile, "w");//The place being written to is OurProgram/Objects/FilenameIndices.txt
+	for (int counter = 0; counter < savedata.indexcount; counter++) {
+		fprintf(indSaveFile, "%d", savedata.indices[counter]);
+		if (counter != savedata.indexcount - 1) {//Add a space so long as this isnt the last element
 			fprintf(indSaveFile, " ");
 		}
 	}
-
-
 	fclose(indSaveFile);
-}
 
+	//TO DO: Get this to save layer data
+	//char objdatafile[100] = "Objects/";
+	//strcat(objdatafile, savedata.filename);//Put the name of the file as the folder name
+	//strcat(objdatafile, ObjDataText);//All vertice files are named this
+	//FILE* objdataSaveFile = fopen(objdatafile, "w");//The place being written to is OurProgram/Objects/FilenameObjData.txt
+	////write the data to the file
+	//fprintf(objdataSaveFile, "%d", savedata.)
+
+}
 
 
 
@@ -285,17 +298,16 @@ void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL) {
 
 //Plan for how it will work: Get all the vertices while rendering them as points, then the user clicks on pairs of 3 vertices to connect them as a triangle.  
 //Lastly the user should be able to click a vertex and then have it follow the mouse until they click again, and a way to switch between these 3 modes of 'vector creation' 'vector connection' and 'vector changing'
-struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
+struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 	printf("Now drawing a shape.\n\n\n");
 	
 	glfwSetCharCallback(window, character_callback);//For tippy typing
-
+	glPointSize(10.0f);//For the vertex rendering
 
 	//Variable stack
-	int menuPosition = 0;//The position in the menu 'function.'
-	int drawVertices = 1;
+	int drawVertices = 1;//whether to draw the endpoints as blocks
 
-	double TIME_BETWEEN_MODES = .25;//The minimum time between switching modes.
+	const double TIME_BETWEEN_MODES = .25;//The minimum time between switching modes.
 
 	//VERTEX AUXILLERY DATA, CARRIES THROUGH TO MANY VERTICES
 		float red, green, blue;//Currently selected colour
@@ -326,26 +338,24 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 	drawnshape.indices = malloc(sizeof(unsigned int));
 	drawnshape.vertexcount = 0;
 	drawnshape.indexcount = 0;
-	
-
+	drawnshape.location = IDENTITY_MATRIX.m;
+	int position = glGetUniformLocation(shaderID, "position");
+	glUniformMatrix4fv(position, 1, GL_FALSE, drawnshape.location);
 
 
 	glfwSetMouseButtonCallback(window, drawShapeCallback);//So when we click we can update the processing click global variable
 
 	//modes
-		int VERT_CREATE = 1;
-		int VERT_CONNECT = 2;
-		int VERT_CHANGE = 3;
-		int VERT_COLOUR = 4;
-		int END_OF_CREATION = 0;
-		int MENU = -1;
+		const int VERT_CREATE = 1;
+		const int VERT_CONNECT = 2;
+		const int VERT_CHANGE = 3;
+		const int VERT_COLOUR = 4;
+		const int END_OF_CREATION = 0;
+		const int MENU = -1;
 
 		//SET DEFAULT MODE
 		int mode = VERT_CREATE;//Set the mode to vertex creation so that we can actually start with making vertices
 	//end of modes
-
-
-	int stillCreating = 1;//Basically just keep 1 until we're done with the shape
 
 	double time = 0;
 	double timeAtLastPrintf = 0;//Used to make sure we dont spam the crap out of the 'Mode is: x' text
@@ -353,7 +363,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 
 
 
-	while (stillCreating == 1) {//While we are still creating the shape, lets us loop between the 3 modes until we are finished.
+	while (1) {//While we are still creating the shape, lets us loop between the 3 modes until we are finished.
 		
 
 		//START OF VERTEX CREATION
@@ -883,7 +893,22 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		}
 		//END OF MENU
 
-		
+		//S9 E1
+		else if (mode == END_OF_CREATION) {
+			printf("Are you sure you would like to end the shape creation? Y/N ");
+			char yesno = keyReader(window, 0);
+			if (yesno == 'y') {//We are ending the shape creation
+				drawnshape.ShapeLayers = userLayerNames;//Copy the layer data over
+				printf("\nWhat would you like to name the object? Max 50 characters. ");
+				drawnshape.filename = malloc(sizeof(char)*51);
+				typing(window, 1, 1, drawnshape.filename);
+				saveShapeToFile(drawnshape);//Save it
+			} else {
+				printf("\nMode: Vertex Creation\n\n");
+				mode == VERT_CREATE;
+			}
+		}
+		//S9 E24
 
 
 		//END OF MODES, ONTO UPDATES
@@ -899,6 +924,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 			}
 			glDrawElements(GL_TRIANGLES, drawnshape.indexcount, GL_UNSIGNED_INT, drawnshape.indices);
 			glBindVertexArray(0);
+			glfwSwapBuffers(window);
 			//End of drawing new stuff
 		}
 
@@ -989,35 +1015,7 @@ struct ShapeData drawShape(GLFWwindow* window, struct mainloopData maindata) {
 		
 
 		
-
-		//UPDATE THE ENTIRE REST OF THE PROGRAM
-		maindata.proecessinputelsewhere = 1;
-		glfwPollEvents();
-		maindata = mainLoop(maindata);//Run the main loop but without it processing input itself.
-		//END OF UPDATING THE REST OF THE PROGRAM
-		
 	}
 	
-	//Done with shape creation, finalize all the data and return it to merge with The Data
-
-
-
-
-
-
-
-
-	//Now done with creating all the vertices for the shape, so turn it into a shape object
-	//struct ShapeData returnshape = createShape(vertices, indices, points * sizeof(float) * 6, (points + 2) * sizeof(unsigned int), 1);
-	
-
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	printf("Done\n");
-	//return(drawnshape);
-
 
 }
