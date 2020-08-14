@@ -37,7 +37,7 @@ struct ShaderStrings {
 struct ShapeData {
 	unsigned int VAO, VBO, EBO;//The vector buffer and vector array object IDs.
 	int vertexcount, indexcount;//The amount of vertices/length of indices
-	float* vertices;//An array of all the vertices in groups of 3, x y z
+	float* vertices;//An array of all the vertices in groups of 6, x y z, r,g,b
 	unsigned int* indices;//An array of which vertices to render in groups of 3, point a, point b, point c
 	int* fulldata;//whether or not it has all data used, VAOs/VBOs filename etc.
 	char* filename;
@@ -73,22 +73,28 @@ int setupShaders();
 struct Setupdata setupEVERYTHING(GLFWwindow* window);
 
 
-struct mainloopData mainLoop(struct mainloopData mainData);
 
 
 
 
 //USER INPUT BLOCK
-
+int processingClick;//Used to keep track of left/right clicks
 unsigned int lastPressedKey;//Last pressed key char value
 double lastPressedTime;//time of last pressed normal key
 double lastSpecialPressTime;//Time of last pressed special key (Gaps should be bigger normally on these as enter hits are heavy)
 int handlingLastPress;//Have we yet to check the last pressed key?
 
+//used to get a 1 for yes and 0 for no with text all in one function
+int confirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedMessage);
+
+
+//Sets global vars for left/right click
+void mouseclickCallback(GLFWwindow* window, int button, int action, int mods);
+
 //Is used to detect a keypress, also saves the pressed key to a varaible for later use
 void character_callback(GLFWwindow* window, unsigned int codepoint);
 
-// 1 = enter, 2 = backspace
+// 1 = enter, 2 = backspace, 3 = escape, 4 end
 int specialPress;
 //Is used to detect when the enter or backspace key is hit, useful for end of typing and confirmations
 void specialKeyDetector(GLFWwindow* window, int key, int scancode, int action, int mods);

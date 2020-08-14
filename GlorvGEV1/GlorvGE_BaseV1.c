@@ -152,7 +152,7 @@ struct Setupdata setupEVERYTHING(GLFWwindow* window) {
 	returndata.window = window;
 
 	//Initialization of Global Variables
-
+	processingClick = 0;
 	lastPressedKey = 0;
 	lastPressedTime = 0;
 	lastSpecialPressTime = 0;
@@ -175,6 +175,22 @@ struct Setupdata setupEVERYTHING(GLFWwindow* window) {
 
 //USER INPUT BLOCK
 
+
+
+//Sets global vars for left/right click
+//int processingClick = 0;//Sets to 1 for left click, sets to 2 for right click. ALWAYS SET TO ZERO IF YOURE GOING TO CHECK IT
+void mouseclickCallback(GLFWwindow* window, int button, int action, int mods) {
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		processingClick = 1;
+		//glfwGetCursorPos(window, &mouseX, &mouseY);
+	} else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		//glfwGetCursorPos(window, &mouseX, &mouseY);
+		processingClick = 2;
+	}
+}
+
+
+
 //Is used to detect a keypress, also saves the pressed key to a varaible for later use
 void character_callback(GLFWwindow* window, unsigned int codepoint) {
 	if (lastPressedTime < glfwGetTime() - .05) {
@@ -196,6 +212,16 @@ void specialKeyDetector(GLFWwindow* window, int key, int scancode, int action, i
 		if (lastSpecialPressTime < glfwGetTime() - .2) {//prevents enter spamming between calls
 			lastSpecialPressTime = glfwGetTime();
 			specialPress = 2;
+		}
+	} else if (key == GLFW_KEY_ESCAPE) {
+		if (lastSpecialPressTime < glfwGetTime() - .2) {//prevents enter spamming between calls
+			lastSpecialPressTime = glfwGetTime();
+			specialPress = 3;
+		}
+	} else if (key == GLFW_KEY_END) {
+		if (lastSpecialPressTime < glfwGetTime() - .2) {//prevents enter spamming between calls
+			lastSpecialPressTime = glfwGetTime();
+			specialPress = 4;
 		}
 	}
 }
@@ -220,8 +246,9 @@ void waitForKeyPress(GLFWwindow* window, int display) {
 
 
 
-//Warning: Will stay in function until keypress. DO NOT USE FOR ONE OFF KEYPRESS
+//Warning: Will stay in function until keypress. DO NOT USE FOR ANYTHING BUT OTHER FUNCTIONS AND DIRECT COMMANDS, NO BACKGROUND COMMANDS
 //Used as a singluar function to return individual pressed keys until enter is hit, display is whether or not to print to console as typing.
+//'\0' returned on enter, 2 returned on backspace
 char keyReader(GLFWwindow* window, int display) {
 	glfwSetCharCallback(window, character_callback);//For tippy typing registration
 	glfwSetKeyCallback(window, specialKeyDetector);
@@ -238,17 +265,36 @@ char keyReader(GLFWwindow* window, int display) {
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
 			return(lastPressedKey);
 		}
-		if (specialPress) {//Enter means we're done here
+		if (specialPress == 1) {//Enter means we're done here
 			specialPress = 0;
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
 			return('\0');
+		} else if (specialPress == 2) {//Backspace usually means to delete the latest entry.
+			return(2);
 		}
 	}
 	
 }
 
-
-
+//used to get a 1 for yes and 0 for no with text all in one function
+int confirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedMessage) {
+	printf("Right click to confirm, esc to cancel.\n");
+	glfwSetKeyCallback(window, specialKeyDetector);
+	processingClick = 0;
+	while (1) {
+		glfwPollEvents();
+		if (processingClick == 2) {
+			processingClick = 0;
+			printf("%s", confirmedMessage);
+			return(1);
+		} else if (specialPress == 2 || specialPress == 3) {
+			specialPress = 0;
+			glfwSetKeyCallback(window, NULL);
+			printf("%s", failedMessage);
+			return(0);
+		}
+	}
+}
 
 
 //Warning, will stay in function until enter is hit
@@ -267,9 +313,26 @@ void typing(GLFWwindow* window, int display, int nullterm, char* string) {
 			} else {//We dont want the null term so break before saving
 				break;
 			}
+		} else if (typedchar == 2) {//backspace, delete the last character
+			typedchar = 0;
+			current--;//Back up one
+			if (nullterm) {//If we want a nullterm to finish the string theres likely no problem in deleting a char with	this
+				string[current] = '\0';
+			} else {//If we dont want a nullterm then just set outright to null
+				string[current] = NULL;
+			}
+
+			if (display) {//if we want to display then we gotta do that real quick, but we cant backspace in the console so just newline and reprint
+				printf("\n");
+				for (int counter = 0; counter < current; counter++) {//The reason we do counter < current is that current is the current position of writing to, empty
+					printf("%c", string[counter]);
+				}
+			}
+
+		} else {//No backspace or enter, so just copy the data over
+			string[current] = typedchar;//copy the data over
+			current++;//keep track of where we are
 		}
-		string[current] = typedchar;//copy the data over
-		current++;//keep track of where we are
 		//returnText = realloc(returnText, sizeof(char) * current);//Give more memory
 	}
 }

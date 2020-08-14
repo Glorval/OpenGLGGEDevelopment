@@ -206,7 +206,8 @@ void saveShapeToFile(struct ShapeData savedata) {
 
 //DRAWING SHAPE BY HAND
 
-int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window) {
+//Returns the closest  vertice to the mouse in terms of WHICH vertice, not the array value. So vertice 0, 1, 2 etc not position 0, 6, 12
+int closestVert(struct ShapeData* givenshape, int points, GLFWwindow* window) {
 	int closestPointNumber = 0;
 
 	double* xy = calloc(2, sizeof(double));
@@ -219,7 +220,7 @@ int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window) {
 
 	for (int counter = 0; counter < points; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
 
-		double currentDistance = distanceTwoDD(givenshape.vertices[counter * VERTEX_LENGTH], xy[0], givenshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
+		double currentDistance = distanceTwoDD(givenshape->vertices[counter * VERTEX_LENGTH], xy[0], givenshape->vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
 		if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
 			closestDistance = currentDistance;
 			closestPointNumber = counter;
@@ -229,27 +230,23 @@ int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window) {
 	return(closestPointNumber);
 }
 
-
-
-
-
-
-
-int processingClick = 0;//Sets to 1 for left click, sets to 2 for right click. ALWAYS SET TO ZERO IF YOURE GOING TO CHECK IT
-
-//Used to get mouse clicks
-void drawShapeCallback(GLFWwindow* window, int button, int action, int mods)
-{
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
-		processingClick = 1;
-		//glfwGetCursorPos(window, &mouseX, &mouseY);
+//Deletes all indice references to given point
+void deleteIndice(struct ShapeData* givenShape, int vert) {
+	for (int currentThree = 0; currentThree < givenShape->indexcount; currentThree = currentThree + 3) {//Run through all indices 3 at a time
+		if ((givenShape->indices[currentThree] == vert) || (givenShape->indices[currentThree + 1] == vert) || (givenShape->indices[currentThree + 2] == vert)) {//Do any of the three point to the removed vertex?
+			if (currentThree != givenShape->indexcount - 3) {//Make sure that we aren't on the final three, if we are its just time to chop the memory off already
+				for (int counter = currentThree; counter < givenShape->indexcount - 3; counter += 3) {//Shift everything back a trio overwriting the useless entry
+					givenShape->indices[counter] = givenShape->indices[counter + 3];
+					givenShape->indices[counter + 1] = givenShape->indices[counter + 4];
+					givenShape->indices[counter + 2] = givenShape->indices[counter + 5];
+				}
+				currentThree = currentThree - 3;//Just back this up to make sure we dont skip any, because if it goes entry 1, 2, 3 and we remove 1 it becomes 2, 3, 3 with the last 3 being cutoff but we're now in POSITION 2, past 2
+			}
+			givenShape->indexcount = givenShape->indexcount - 3;//We have removed a trio of entries so keep track of it
+		}
 	}
-	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		//glfwGetCursorPos(window, &mouseX, &mouseY);
-		processingClick = 2;
-	}
+	givenShape->indices = realloc(givenShape->indices, IND_SIZE * givenShape->indexcount);//Re-allocate the memory now that we're done shifting
 }
-
 
 //Deletes given vertice and all index entries pointing to it. Vert is in nonadjusted position, so not 0, 6, 12, its just in vertex 0, 1, 2, 3 etc
 void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL) {
@@ -294,8 +291,6 @@ void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL) {
 }
 
 
-
-
 //Plan for how it will work: Get all the vertices while rendering them as points, then the user clicks on pairs of 3 vertices to connect them as a triangle.  
 //Lastly the user should be able to click a vertex and then have it follow the mouse until they click again, and a way to switch between these 3 modes of 'vector creation' 'vector connection' and 'vector changing'
 struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
@@ -334,18 +329,15 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 	//END OF USED FOR VERTEX MOVING
 
 
+	//SHAPEDATA
+		struct ShapeData drawnshape;//The structure that we will return and render from
+		drawnshape.vertices = malloc(sizeof(float));//Initalize each
+		drawnshape.indices = malloc(sizeof(unsigned int));
+		drawnshape.vertexcount = 0;
+		drawnshape.indexcount = 0;
+	//END OF SHAPEDATA
 
-	struct ShapeData drawnshape;//The structure that we will return and render from
-	drawnshape.vertices = malloc(sizeof(float));//Initalize each
-	drawnshape.indices = malloc(sizeof(unsigned int));
-	drawnshape.vertexcount = 0;
-	drawnshape.indexcount = 0;
-	drawnshape.location = IDENTITY_MATRIX.m;
-	int position = glGetUniformLocation(shaderID, "position");
-	glUniformMatrix4fv(position, 1, GL_FALSE, drawnshape.location);
-
-
-	glfwSetMouseButtonCallback(window, drawShapeCallback);//So when we click we can update the processing click global variable
+	glfwSetMouseButtonCallback(window, mouseclickCallback);//So when we click we can update the processing click global variable
 
 	//modes
 		const int VERT_CREATE = 1;
@@ -358,6 +350,11 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 		//SET DEFAULT MODE
 		int mode = VERT_CREATE;//Set the mode to vertex creation so that we can actually start with making vertices
 	//end of modes
+
+	//VERTEX CONNECTION VARIABLES
+		int tempIndices[3];//To temporarily store the indices until we have 3
+		int indiceConnections = 0;//To indicate when we have 3 indices stored.
+	//END OF VERTEX CONNECTION VARIABLES
 
 	double time = 0;
 	double timeAtLastPrintf = 0;//Used to make sure we dont spam the crap out of the 'Mode is: x' text
@@ -403,7 +400,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				processingClick = 0;//Reset the click
 
 
-				int vertToDelete = closestVert(drawnshape, drawnshape.vertexcount, window);//Find the closest vertice to the click
+				int vertToDelete = closestVert(&drawnshape, drawnshape.vertexcount, window);//Find the closest vertice to the click
 				deleteVertice(&drawnshape, vertToDelete, drawnshape.vertexcount, 1);
 				
 			//END OF VERTEX DELETION
@@ -493,43 +490,40 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 		//START OF VERTEX CONNECTING
 		else if (mode == VERT_CONNECT) {
 			int closestPointNumber = 0;//The closest vertex entry
-			int tempIndices[3];//To temporarily store the indices until we have 3
-			int howManyIndices = 0;//To indicate when we have 3 indices stored.
+			
 
 
 			if (processingClick == 1) {//left click, find the closest point and its array value and save an index to it
 				processingClick = 0;
 
+
 				//FIND CLOSEST POINT TO CLICK
-				double* xy = calloc(2, sizeof(double));
-				glfwGetCursorPos(window, &xy[0], &xy[1]);
-
-				float XY[2];
-
-				XY[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-				XY[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
-
-				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
-
-				for (int counter = 0; counter < drawnshape.vertexcount; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
-
-					float currentDistance = distanceTwoD(drawnshape.vertices[counter * VERTEX_LENGTH], XY[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], XY[1]);//Find the current distance
-					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
-						closestDistance = currentDistance;
-						closestPointNumber = counter;
-					}
-
-				}
-
+				closestPointNumber = closestVert(&drawnshape, drawnshape.vertexcount, window);
+				
+								
 				//Now we have the closest point, so make a temp index out of it.
 				//BUG CURRENTLY SAVES INDICES EVEN IF NOT  FULLY CREATED. NEEDS TO GATHER THREE THEN SAVE ALL THREE AT ONCE
-				drawnshape.indexcount++;
+				tempIndices[indiceConnections] = closestPointNumber;
+				indiceConnections++;
+				printf("%d", indiceConnections);
+				if (indiceConnections == 3) {
+					indiceConnections = 0;
+					drawnshape.indexcount += 3;//we're adding three indices
+					drawnshape.indices = realloc(drawnshape.indices, sizeof(unsigned int) * drawnshape.indexcount);//Grab more memory to store em in
+					drawnshape.indices[drawnshape.indexcount - 3] = tempIndices[0];//then store all three
+					drawnshape.indices[drawnshape.indexcount - 2] = tempIndices[1];
+					drawnshape.indices[drawnshape.indexcount - 1] = tempIndices[2];
+				}
+				
 					
-				drawnshape.indices = realloc(drawnshape.indices, sizeof(unsigned int) * drawnshape.indexcount);//Grab more memory to store em in
-				drawnshape.indices[drawnshape.indexcount - 1] = closestPointNumber;
+				
 
-				} else if (processingClick == 2) {//Right click. Does nothing at the moment
-					processingClick = 0;
+				} 
+			else if (processingClick == 2) {//Right click. Disconnects all connections to the point
+					printf("Are you sure you wish to disconnect this point?\n");
+					if (confirmationDialog(window, "Disconnected.\n\n", "Cancled.\n\n")) {
+						deleteIndice(&drawnshape, closestVert(&drawnshape, drawnshape.vertexcount, window));
+					}
 				}
 
 		}
@@ -539,7 +533,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 		//VERT COLOUR CHANGING
 		else if (mode == VERT_COLOUR) {
 		int closestPointNumber = 0;//The closest vertex entry
-
+			//Left click paints colour
 			if (processingClick == 1) {//left click, find the closest point and switch its colour to the currently active colour
 				processingClick = 0;
 
@@ -581,53 +575,27 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 
 			//End of processing left click
-			} else if (processingClick == 2) {//Right click copies the nearest colour
+			} 
+			//Right click copies the nearest colour
+			else if (processingClick == 2) {
 				processingClick = 0;
 
 
 				//FIND CLOSEST POINT TO CLICK
-				double* xy = calloc(2, sizeof(double));
-				glfwGetCursorPos(window, &xy[0], &xy[1]);
 
-				xy[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-				xy[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
-
-				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
-
-				for (int counter = 0; counter < drawnshape.vertexcount; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
-
-					double currentDistance = distanceTwoDD(drawnshape.vertices[counter * VERTEX_LENGTH], xy[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
-					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
-						closestDistance = currentDistance;
-						closestPointNumber = counter;
-					}
-
-				}//End of tracking left click, we have a point  now
+				int vertToCopy = closestVert(&drawnshape, drawnshape.vertexcount, window);
 
 			
-				float tred = drawnshape.vertices[closestPointNumber + 3];
-				float tgreen = drawnshape.vertices[closestPointNumber + 4];
-				float tblue = drawnshape.vertices[closestPointNumber + 5];
-				printf("Copied colour: %f, %f, %f. Enter to confirm.", tred, tgreen, tblue);
-				glfwSetKeyCallback(window, specialKeyDetector);
-
-				while (1) {
-					glfwPollEvents();
-					if (specialPress == 1) {
-						specialPress = 0;
-						red = tred;
-						green = tgreen;
-						blue = tblue;
-						glfwSetKeyCallback(window, NULL);
-						printf("\nColours copied.\n");
-						break;
-					} else if (specialPress == 2 ) {
-						specialPress = 0;
-						glfwSetKeyCallback(window, NULL);
-						printf("\nCanceled.\n");
-						break;
-					}
+				float tred = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 3];
+				float tgreen = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 4];
+				float tblue = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 5];
+				printf("Copied colour: %f, %f, %f.\n", tred, tgreen, tblue);
+				if (confirmationDialog(window, "Colour copied.\n\n", "Colour unchanged.\n\n")) {
+					red = tred;
+					green = tgreen;
+					blue = tblue;
 				}
+				
 
 			}//END OF RIGHT CLICK
 
@@ -996,6 +964,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 					//cleanup variables
 					selectedPoint = 0;
+					indiceConnections = 0;
 				}
 			}//Vertex creation mode
 
@@ -1008,6 +977,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 					//cleanup variables
 					selectedPoint = 0;
+					indiceConnections = 0;
 				}
 			}
 
@@ -1021,6 +991,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 					//cleanup variables
 					selectedPoint = 0;
+					indiceConnections = 0;
 				}
 
 			} //vertex connect mode
@@ -1036,6 +1007,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 					//cleanup variables
 					selectedPoint = 0;
+					indiceConnections = 0;
 				}
 			}
 
@@ -1043,24 +1015,27 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 			//menu
 			else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {//Escape 'brings up menu'
 				time = glfwGetTime();
-				if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
-					timeAtLastPrintf = time;
+				if (time - lastSpecialPressTime > TIME_BETWEEN_MODES) {
+					lastSpecialPressTime = time;
 					printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n\n");
 					mode = MENU;
 					selectedPoint = 0;
+					indiceConnections = 0;
 				}
 			}
 			//end creation
 			else if (glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS) {
 				time = glfwGetTime();
-				if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
-					timeAtLastPrintf = time;
+				if (time - lastSpecialPressTime > TIME_BETWEEN_MODES) {
+					lastSpecialPressTime = time;
 					mode = END_OF_CREATION;
 
 					//cleanup variables
 					selectedPoint = 0;
+					indiceConnections = 0;
 				}
 			}
+
 		}
 		
 		

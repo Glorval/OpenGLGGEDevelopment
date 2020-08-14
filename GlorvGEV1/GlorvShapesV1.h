@@ -36,11 +36,10 @@ void saveShapeToFile(struct ShapeData savedata);
 //FOR DRAWING SHAPES BY HAND
 
 //Find the closest vertice to click
-int closestVert(struct ShapeData givenshape, int points, GLFWwindow* window);
+int closestVert(struct ShapeData* givenshape, int points, GLFWwindow* window);
 
-//Used with DrawShape to find clicks
-void drawShapeCallback(GLFWwindow* window, int button, int action, int mods);
-
+//Deletes all indice references to given point
+void deleteIndice(struct ShapeData* givenShape, int vert);
 
 //Deletes given vertice and all index entries pointing to it
 void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL);

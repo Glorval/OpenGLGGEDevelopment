@@ -7,19 +7,6 @@
 #include <math.h>
 #include "GlorvGEV1/GlorvGE_BaseV1.h"
 
-struct consoleReturns {
-    struct ShapeData consoleShape;
-    int returningShape;
-};
-
-
-
-//Used to send input data
-struct inputReturns {
-    int success;
-    struct MouseData mouseInput;
-};
-
 
 
 
