@@ -299,8 +299,10 @@ void deleteVertice(struct ShapeData* givenShape, int vert, int updateOpenGL) {
 //Plan for how it will work: Get all the vertices while rendering them as points, then the user clicks on pairs of 3 vertices to connect them as a triangle.  
 //Lastly the user should be able to click a vertex and then have it follow the mouse until they click again, and a way to switch between these 3 modes of 'vector creation' 'vector connection' and 'vector changing'
 struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
-	printf("Now drawing a shape.\n\n\n");
-	
+	printf("\nNow drawing a shape.\n\n\n");
+	printf("\nMode: Vertex Creation\n\n");//default mode
+
+
 	glfwSetCharCallback(window, character_callback);//For tippy typing
 	glPointSize(10.0f);//For the vertex rendering
 
@@ -927,87 +929,94 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 			glfwSwapBuffers(window);
 			//End of drawing new stuff
 		}
+		
+		glfwPollEvents();
+		glfwSwapBuffers(window);
+		glClearColor(0.0, 0.1, 0.9, 0.5);//clear the frame that was shown and just got pulled back
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
 
 
 
 		//MODE SELECTOR CODE
+		if (mode != MENU) {
+			//create/delete mode
+			if (lastPressedKey == '1' && handlingLastPress) {
+				handlingLastPress = 0;//Dealt with keypress
+				if (mode != VERT_CREATE) {
+					printf("\nMode: Vertex Creation\n\n");
+					mode = VERT_CREATE;
 
-		//create/delete mode
-		if (lastPressedKey == '1' && handlingLastPress){
-			handlingLastPress = 0;//Dealt with keypress
-			if(mode != VERT_CREATE){
-				printf("\nMode: Vertex Creation\n\n");
-				mode = VERT_CREATE;
+					//cleanup variables
+					selectedPoint = 0;
+				}
+			}//Vertex creation mode
 
-				//cleanup variables
-				selectedPoint = 0;
-			}
-		}//Vertex creation mode
+			//move mode
+			else if (lastPressedKey == '2' && handlingLastPress) {
+				handlingLastPress = 0;//Dealt with keypress
+				if (mode != VERT_CHANGE) {
+					printf("\nMode: Vertex Changing\n\n");
+					mode = VERT_CHANGE;
 
-		//move mode
-		else if (lastPressedKey == '2' && handlingLastPress) {
-			handlingLastPress = 0;//Dealt with keypress
-			if (mode != VERT_CHANGE) {
-				printf("\nMode: Vertex Changing\n\n");
-				mode = VERT_CHANGE;
-
-				//cleanup variables
-				selectedPoint = 0;
-			}
-		} 
-
-		//Vertex connect mode
-		else if (lastPressedKey == '3' && handlingLastPress) {
-			handlingLastPress = 0;//Dealt with keypress
-			if (mode != VERT_CONNECT) {
-				timeAtLastPrintf = time;
-				printf("\nMode: Vertex Connection.\n\n");
-				mode = VERT_CONNECT;
-
-				//cleanup variables
-				selectedPoint = 0;
+					//cleanup variables
+					selectedPoint = 0;
+				}
 			}
 
-		} //vertex connect mode
+			//Vertex connect mode
+			else if (lastPressedKey == '3' && handlingLastPress) {
+				handlingLastPress = 0;//Dealt with keypress
+				if (mode != VERT_CONNECT) {
+					timeAtLastPrintf = time;
+					printf("\nMode: Vertex Connection.\n\n");
+					mode = VERT_CONNECT;
 
-		//vertex colour change
-		else if (lastPressedKey == '4' && handlingLastPress) {
-			handlingLastPress = 0;
-			time = glfwGetTime();
-			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
-				timeAtLastPrintf = time;
-				mode = VERT_COLOUR;
-				printf("\nMode: Vertex Colour Changing.\n\n");
+					//cleanup variables
+					selectedPoint = 0;
+				}
 
-				//cleanup variables
-				selectedPoint = 0;
+			} //vertex connect mode
+
+			//vertex colour change
+			else if (lastPressedKey == '4' && handlingLastPress) {
+				handlingLastPress = 0;
+				time = glfwGetTime();
+				if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+					timeAtLastPrintf = time;
+					mode = VERT_COLOUR;
+					printf("\nMode: Vertex Colour Changing.\n\n");
+
+					//cleanup variables
+					selectedPoint = 0;
+				}
+			}
+
+			//Old style below for things that arent characters
+			//menu
+			else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {//Escape 'brings up menu'
+				time = glfwGetTime();
+				if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+					timeAtLastPrintf = time;
+					printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n\n");
+					mode = MENU;
+					selectedPoint = 0;
+				}
+			}
+			//end creation
+			else if (glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS) {
+				time = glfwGetTime();
+				if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
+					timeAtLastPrintf = time;
+					mode = END_OF_CREATION;
+
+					//cleanup variables
+					selectedPoint = 0;
+				}
 			}
 		}
-
-		//Old style below for things that arent characters
-		//menu
-		else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {//Escape 'brings up menu'
-			time = glfwGetTime();
-			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
-				timeAtLastPrintf = time;
-				printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n\n");
-				mode = MENU;
-				selectedPoint = 0;
-			}
-		}
-		//end creation
-		else if (glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS) {
-			time = glfwGetTime();
-			if (time - timeAtLastPrintf > TIME_BETWEEN_MODES) {
-				timeAtLastPrintf = time;
-				mode = END_OF_CREATION;
-
-				//cleanup variables
-				selectedPoint = 0;
-			}
-		}
+		
 		
 		//END OF MODE SELECTOR
 

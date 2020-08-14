@@ -231,13 +231,11 @@ char keyReader(GLFWwindow* window, int display) {
 				printf("%c", lastPressedKey);
 			}
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
-			glfwSetCharCallback(window, NULL);//We're done so reset the callback
 			return(lastPressedKey);
 		}
 		if (enterDetection) {//Enter means we're done here
 			enterDetection = 0;
 			glfwSetKeyCallback(window, NULL);//We're done so reset the callback
-			glfwSetCharCallback(window, NULL);//We're done so reset the callback
 			return('\0');
 		}
 	}

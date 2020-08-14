@@ -25,29 +25,6 @@ struct inputReturns {
 
 GLFWwindow* window;
 
-//struct consoleReturns consoleInput(char input[100], struct mainloopData* alldata) {//Accepts user input and goes down a tree to find out what the hell we're doing
-//    struct consoleReturns Returns;
-//    if (strstr(input, "create") != NULL) {//Create tree
-//
-//
-//        if (strstr(input, "shape")) {//Creating a shape
-//            Returns.consoleShape = drawShape(window, *alldata);
-//            Returns.returningShape = 1;
-//        }
-//
-//
-//        //end of create tree
-//
-//    }
-//    else {
-//        Returns.returningShape = 0;
-//    }
-//
-//
-//
-//    return(Returns);
-//}
-
 
 //The main loop of the program but in function form wauw, needed it this way to not go INSANE when trying to register clicks
 //Waiting on console stops the program and waits for input, loaded shapes is all shapes loaded currently, index count is how many indices to render, process input elsewhere disables the processing of input in here
@@ -80,9 +57,9 @@ int main()
 
     
     printf("Would you like to Load a shape to edit or make a New one?");
-    char userInput = keyReader(window, 1);
+    char userInput = keyReader(window, 0);//get input dont display
     if (userInput == 'n') {
-        drawShape(window, shaderProgram);
+        saveShapeToFile(drawShape(window, shaderProgram));//Get the new shape and save it immediately
     }
 
 
