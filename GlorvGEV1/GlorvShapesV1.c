@@ -9,7 +9,7 @@
 
 #define EQFLOAT 0.0000001
 
-#define DEPTH_ADJUSTER 20000//How much to divide user input by when making 2d objects and layering
+#define DEPTH_ADJUSTER 2000000//How much to divide user input by when making 2d objects and layering
 
 #define AdjustCharToArrayInt (int) '0' - 1
 
@@ -302,8 +302,15 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 	glPointSize(10.0f);//For the vertex rendering
 
 	//Variable stack
-	int drawVertices = 1;//whether to draw the endpoints as blocks
 
+	//OPTIONS
+		int drawVertices = 1;//whether to draw the endpoints as blocks
+		int AutoSelectLayers = 0;//Whether to automatically select newly created layers
+		int Confirmations = 1;//Whether to ask the user to confirm certain actions
+
+	//END OF OPTIONS
+
+	
 	const double TIME_BETWEEN_MODES = .25;//The minimum time between switching modes.
 
 	//VERTEX AUXILLERY DATA, CARRIES THROUGH TO MANY VERTICES
@@ -645,7 +652,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				handlingLastPress = 0;
 				int layersRemain = -1;
 
-				for (int counter = 0; counter < 10; counter++) {//check if we have any layers remaining, do so by seeing if any are un-named
+				for (int counter = 0; counter < 9; counter++) {//check if we have any layers remaining, do so by seeing if any are un-named
 					if (userLayerNames[counter].name == NULL) {
 						layersRemain = counter;
 						break;
@@ -664,8 +671,6 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 					//END OF NAMING THE LAYER
 
 
-
-					//GET LAYER NUMBER
 					printf("What depth would you like to make it? 0 - 9.    ");
 
 					while (1) {//while loop because we might get invalid depth from user
@@ -675,7 +680,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 						userLayerNames[layersRemain].depth = userLayerNames[layersRemain].depth / DEPTH_ADJUSTER;//then adjust the number to get it really smol so as to not look 3d
 
 						for (int counter = 0; counter < layersRemain; counter++) {//Run through all the other layers and see if one is already on this height
-							if (fabs(userLayerNames[layersRemain].depth - userLayerNames[counter].depth) < 0.00000001) {//if any are on the height invalidate the run
+							if (fabs(userLayerNames[layersRemain].depth - userLayerNames[counter].depth) < 0.000000000001) {//if any are on the height invalidate the run
 								validdepth = 0; 
 								printf("Not a valid layer height, already taken.\n");
 								break;//and break out of the for loop to save time
@@ -688,12 +693,12 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 					}
 					
 
-
-					//END OF GETTING LAYER NUMBER
 					
 
 
 
+				} else {
+					printf("No more layers remain.\n");
 				}
 
 				mode = VERT_CREATE;//Back out of menu now that we are done here.
@@ -712,7 +717,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 					counter++;
 				}
 
-				waitForKeyPress(window, 1);
+				waitForKeyPress(window, 0);
 
 				//We have the selected layer now (Hopefully) so we can select it
 				currentLayer = (int) lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
@@ -736,7 +741,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				}
 
 				handlingLastPress = 0;//Make sure its clear
-				waitForKeyPress(window, 1);
+				waitForKeyPress(window, 0);
 				//Now we have a number keypress to select it
 
 				currentLayer = (int)lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
@@ -827,12 +832,19 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				handlingLastPress == 0;//As always reset this
 				mode = VERT_CREATE;//This is a oneoff lock in path that shouldnt be looped through
 
-				printf("1) Layers select upon creation.\n");
+				printf("1) Layers select upon creation. Currently %d\n2) Confirmations required to perform certain actions. Currently %d\n", AutoSelectLayers, Confirmations);
 
+				char action = keyReader(window, 0);
+				if (action == '1') {
+					AutoSelectLayers = !AutoSelectLayers;
+				} else if (action == '2') {
+					Confirmations = !Confirmations;
+				}
+				handlingLastPress = 0;//extra safety
+				
 
-
-
-
+				
+				printf("\nMode: Vertex Creation\n\n");
 			}
 			//END OF OPTIONS
 
@@ -954,7 +966,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 						indiceConnections = 0;
 					} else {
 						lastSpecialPressTime = time;
-						printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n\n");
+						printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n7) Options\n\n");
 						mode = MENU;
 
 						selectedPoint = 0;
