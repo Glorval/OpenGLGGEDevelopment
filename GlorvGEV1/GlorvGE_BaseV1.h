@@ -86,7 +86,7 @@ int handlingLastPress;//Have we yet to check the last pressed key?
 
 //used to get a 1 for yes and 0 for no with text all in one function
 int confirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedMessage);
-
+int extendedConfirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedMessage, char* initialMessage);
 
 //Sets global vars for left/right click
 void mouseclickCallback(GLFWwindow* window, int button, int action, int mods);
@@ -103,8 +103,9 @@ void specialKeyDetector(GLFWwindow* window, int key, int scancode, int action, i
 //Used to wait for a keypress, only useful for if you want to wait for a single input for yes/no, single number, etc.
 void waitForKeyPress(GLFWwindow* window, int display);
 
-//Warning: Will stay in function until keypress. DO NOT USE FOR ONE OFF KEYPRESS
-//Used as a singluar function to return individual pressed keys until enter is hit, display is whether or not to print to console as typing
+//Warning: Will stay in function until keypress. DO NOT USE FOR ANYTHING BUT OTHER FUNCTIONS AND DIRECT COMMANDS, NO BACKGROUND COMMANDS
+//Used as a singluar function to return individual pressed keys until enter is hit, display is whether or not to print to console as typing.
+//'\0' returned on enter, 2 returned on backspace
 char keyReader(GLFWwindow* window, int display);
 
 

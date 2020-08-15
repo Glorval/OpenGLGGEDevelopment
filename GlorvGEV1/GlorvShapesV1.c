@@ -505,7 +505,6 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				//BUG CURRENTLY SAVES INDICES EVEN IF NOT  FULLY CREATED. NEEDS TO GATHER THREE THEN SAVE ALL THREE AT ONCE
 				tempIndices[indiceConnections] = closestPointNumber;
 				indiceConnections++;
-				printf("%d", indiceConnections);
 				if (indiceConnections == 3) {
 					indiceConnections = 0;
 					drawnshape.indexcount += 3;//we're adding three indices
@@ -616,59 +615,60 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				int currentDigit = 0;
 				char numInput[3];
 
-				printf("What colour would you like?  ");
+				if(extendedConfirmationDialog(window, "\n","Colour unchanged.\n","What colour would you like?\n")){
 
-
-				//GET RED
-				while (1) {//we break once we hit three (Basically a for loop)
-					numInput[currentDigit] = keyReader(window, 1);//get the next keypress
-					currentDigit++;//update this to keep storing everything
-					if (currentDigit == 3) {
-						break;
-					}
-				}
-				//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
-				         //100s										10s									1s
+					//GET RED
+					typing(window, 1, 0, numInput);
+					printf("\n");
+					//while (1) {//we break once we hit three (Basically a for loop)
+					//	numInput[currentDigit] = keyReader(window, 1);//get the next keypress
+					//	currentDigit++;//update this to keep storing everything
+					//	if (currentDigit == 3) {
+					//		break;
+					//	}
+					//}
+					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+							 //100s										10s									1s
 				
-				twoFiftyFive = (int) (((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
-				red = (float) twoFiftyFive / 255;//Then convert the int to a float and BOOM
-				//END OF GET RED
+					twoFiftyFive = (int) (((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+					red = (float) twoFiftyFive / 255;//Then convert the int to a float and BOOM
+					//END OF GET RED
 
-				printf("   ");//add some space
-				currentDigit = 0;//Reset this
+					//printf("   ");//add some space
+					currentDigit = 0;//Reset this
 
-				//GET GREEN
-				while (1) {//we break once we hit three (Basically a for loop)
-					numInput[currentDigit] = keyReader(window, 1);//get the next keypress
-					currentDigit++;//update this to keep storing everything
-					if (currentDigit == 3) {
-						break;
+					//GET GREEN
+					while (1) {//we break once we hit three (Basically a for loop)
+						numInput[currentDigit] = keyReader(window, 1);//get the next keypress
+						currentDigit++;//update this to keep storing everything
+						if (currentDigit == 3) {
+							break;
+						}
 					}
-				}
-				//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
-						 //100s										10s									1s
-				twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
-				green = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
-				//END OF GET GREEN
+					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+							 //100s										10s									1s
+					twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+					green = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
+					//END OF GET GREEN
 
-				printf("   ");//add some space
-				currentDigit = 0;//Reset this
-
-				//GET BLUE
-				while (1) {//we break once we hit three (Basically a for loop)
-					numInput[currentDigit] = keyReader(window, 1);//get the next keypress
-					currentDigit++;//update this to keep storing everything
-					if (currentDigit == 3) {
-						break;
+					printf("   ");//add some space
+					currentDigit = 0;//Reset this
+					
+					//GET BLUE
+					while (1) {//we break once we hit three (Basically a for loop)
+						numInput[currentDigit] = keyReader(window, 1);//get the next keypress
+						currentDigit++;//update this to keep storing everything
+						if (currentDigit == 3) {
+							break;
+						}
 					}
-				}
-				//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
-						 //100s										10s									1s
+					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+							 //100s										10s									1s
 
-				twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
-				blue = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
-				//END OF GET BLUE
-
+					twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+					blue = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
+					//END OF GET BLUE
+				}//End of switching colour
 
 
 
@@ -775,13 +775,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				}
 
 				handlingLastPress = 0;//Make sure its clear
-				while (1) {//Wait until we get a key
-					glfwPollEvents();
-					if (handlingLastPress == 1) {
-						handlingLastPress = 0;//clear it
-						break;
-					}
-				}
+				waitForKeyPress(window, 1);
 				//Now we have a number keypress to select it
 
 				currentLayer = (int)lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
@@ -791,50 +785,13 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				
 				//RE-NAMING THE LAYER
 				printf("What would you like to re-name this layer to?   ");
-				char input[25];
-				int current = 0;
-				memset(input, '\0', 25);
-				glfwSetKeyCallback(window, specialKeyDetector);
-				handlingLastPress = 0;//Clear this before we head in
-				while (1) {//Keep looping here until we get an 'enter' press
-					glfwPollEvents();
-					if (handlingLastPress) {
-						handlingLastPress = 0;
-						input[current] = lastPressedKey;
-						printf("%c", lastPressedKey);
-						current++;
-					}
-					if (specialPress == 1) {
-						specialPress = 0;//We handled it
-						break;//and enter is 'we are done here'
-					}
-				}
-				printf("\n\n");
-				glfwSetKeyCallback(window, NULL);
-				userLayerNames[currentLayer].name = malloc(sizeof(char) * 25);
-				strcpy(userLayerNames[currentLayer].name, input);
+				typing(window, 1, 1, userLayerNames[currentLayer].name);
+				handlingLastPress = 0;//Handled
 				//END OF RE-NAMING THE LAYER
 
 
 
 				//DO NOT re-height the layer
-				////RE-HEIGHTING THE LAYER
-				//printf("What height would you like to make it? 0 - 9.    ");
-
-				//while (1) {//Keep looping here until we get a number
-				//	glfwPollEvents();
-				//	if (handlingLastPress) {
-				//		handlingLastPress = 0;//Handling it
-				//		userLayerNames[currentLayer].depth = (float)lastPressedKey - (float)'0';
-				//		printf("%c\n", lastPressedKey);//Display the user input in the console
-				//		if (userLayerNames[currentLayer].depth != 0) {
-				//			userLayerNames[currentLayer].depth = userLayerNames[currentLayer].depth / DEPTH_ADJUSTER;
-				//		}
-				//		break;
-				//	}
-				//}
-				////END OF RE-HEIGHTING THE LAYER
-
 
 				mode = VERT_CREATE;//Back out of menu now that we are done here.
 				printf("\nMode: Vertex Creation\n\n");
@@ -847,43 +804,44 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				handlingLastPress = 0;//Handled
 				int counter = 0;
 
-				printf("What layer would you like to delete?\n");
-				while (userLayerNames[counter].name != NULL) {//Print the layers out
-					printf("%d) %s, depth %.0f\n", counter + 1, userLayerNames[counter].name, userLayerNames[counter].depth * DEPTH_ADJUSTER);
-					counter++;
-				}
+				if(extendedConfirmationDialog(window, "What layer would you like to delete?\n", "\n", "Are you sure  you wish to delete a layer?\n")){//Confirm that the user wishes to delete a layer
 
-				waitForKeyPress(window, 1);
-				
-				//Now we have a number keypress to select it then delete it
-				int currentlayer = lastPressedKey - AdjustCharToArrayInt;
-				float layerheight = userLayerNames[currentlayer].depth;//The z value we need to remove points on
-
-				for (int current = 0; current < drawnshape.vertexcount; current++) {//Run through each vertice and see if we need to delete it
-
-					if (fabs(drawnshape.vertices[(current * VERTEX_LENGTH) + 2] - layerheight) < 0.0000001) {//Is this vertice on the correct z value to be on this layer?
-						//if so we need to delete it, but then also pull back current so as to not skip any vertices (Because if we delete it all vertices get shifted back 1
-						deleteVertice(&drawnshape, current, 0);
-						current--;
+					while (userLayerNames[counter].name != NULL) {//Print the layers out
+						printf("%d) %s, depth %.0f\n", counter + 1, userLayerNames[counter].name, userLayerNames[counter].depth * DEPTH_ADJUSTER);
+						counter++;
 					}
 
-				}
-
-				//Since we aren't reallocating in the delete vertice, as that would potentially be a crapton of updates, update now. 	
-				glBufferData(GL_ARRAY_BUFFER, drawnshape.vertexcount * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
+					waitForKeyPress(window, 1);
 				
-				counter = currentlayer;//Start at the given layer
-				while (userLayerNames[counter].name != NULL) {//Overwrite the current layer and then delete the last
-					if(userLayerNames[counter+1].name != NULL){
-						userLayerNames[counter].name = userLayerNames[counter + 1].name;
-						userLayerNames[counter].depth = userLayerNames[counter + 1].depth;
-					} else {
-						userLayerNames[counter].name = NULL;
-						userLayerNames[counter].depth = -10;
-					}
-					counter++;
-				}
+					//Now we have a number keypress to select it then delete it
+					int currentlayer = lastPressedKey - AdjustCharToArrayInt;
+					float layerheight = userLayerNames[currentlayer].depth;//The z value we need to remove points on
 
+					for (int current = 0; current < drawnshape.vertexcount; current++) {//Run through each vertice and see if we need to delete it
+
+						if (fabs(drawnshape.vertices[(current * VERTEX_LENGTH) + 2] - layerheight) < 0.0000001) {//Is this vertice on the correct z value to be on this layer?
+							//if so we need to delete it, but then also pull back current so as to not skip any vertices (Because if we delete it all vertices get shifted back 1
+							deleteVertice(&drawnshape, current, 0);
+							current--;
+						}
+
+					}
+
+					//Since we aren't reallocating in the delete vertice, as that would potentially be a crapton of updates, update now. 	
+					glBufferData(GL_ARRAY_BUFFER, drawnshape.vertexcount * VERTEX_SIZE, drawnshape.vertices, GL_DYNAMIC_DRAW);
+				
+					counter = currentlayer;//Start at the given layer
+					while (userLayerNames[counter].name != NULL) {//Overwrite the current layer and then delete the last
+						if(userLayerNames[counter+1].name != NULL){
+							userLayerNames[counter].name = userLayerNames[counter + 1].name;
+							userLayerNames[counter].depth = userLayerNames[counter + 1].depth;
+						} else {
+							userLayerNames[counter].name = NULL;
+							userLayerNames[counter].depth = -10;
+						}
+						counter++;
+					}
+				}
 
 			}
 			//END OF DELETE LAYER
@@ -903,8 +861,19 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 			}
 			//END OF SWITCH DRAW VERTICE MODE
 
+			//OPTIONS
+			else if (lastPressedKey == '7' && handlingLastPress) {
+				handlingLastPress == 0;//As always reset this
+				mode = VERT_CREATE;//This is a oneoff lock in path that shouldnt be looped through
+
+				printf("1) Layers select upon creation.\n");
 
 
+
+
+
+			}
+			//END OF OPTIONS
 
 		}
 		//END OF MENU
@@ -1016,11 +985,21 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 			else if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {//Escape 'brings up menu'
 				time = glfwGetTime();
 				if (time - lastSpecialPressTime > TIME_BETWEEN_MODES) {
-					lastSpecialPressTime = time;
-					printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n\n");
-					mode = MENU;
-					selectedPoint = 0;
-					indiceConnections = 0;
+					if (mode == MENU) {
+						mode = VERT_CREATE;
+						printf("\nMode: Vertex Creation\n\n");
+
+						selectedPoint = 0;
+						indiceConnections = 0;
+					} else {
+						lastSpecialPressTime = time;
+						printf("\nWhat would you like to do?\n1) Select colour.\n2) Create Layer\n3) Switch Layer\n4) Edit Layer\n5) Delete Layer\n6) Switch Vertex Rendering\n\n");
+						mode = MENU;
+
+						selectedPoint = 0;
+						indiceConnections = 0;
+					}
+					
 				}
 			}
 			//end creation

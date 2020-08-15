@@ -286,6 +286,7 @@ int confirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedM
 		if (processingClick == 2) {
 			processingClick = 0;
 			printf("%s", confirmedMessage);
+			glfwSetKeyCallback(window, NULL);
 			return(1);
 		} else if (specialPress == 2 || specialPress == 3) {
 			specialPress = 0;
@@ -296,6 +297,25 @@ int confirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedM
 	}
 }
 
+int extendedConfirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedMessage, char* initialMessage) {
+	printf("%s", initialMessage);
+	glfwSetKeyCallback(window, specialKeyDetector);
+	processingClick = 0;
+	while (1) {
+		glfwPollEvents();
+		if (processingClick == 2) {
+			processingClick = 0;
+			printf("%s", confirmedMessage);
+			glfwSetKeyCallback(window, NULL);
+			return(1);
+		} else if (specialPress == 2 || specialPress == 3) {
+			specialPress = 0;
+			glfwSetKeyCallback(window, NULL);
+			printf("%s", failedMessage);
+			return(0);
+		}
+	}
+}
 
 //Warning, will stay in function until enter is hit
 //Used to get typing input reliably, display displays it, nullterm keeps the \0 at the end of the string.
@@ -322,11 +342,8 @@ void typing(GLFWwindow* window, int display, int nullterm, char* string) {
 				string[current] = NULL;
 			}
 
-			if (display) {//if we want to display then we gotta do that real quick, but we cant backspace in the console so just newline and reprint
-				printf("\n");
-				for (int counter = 0; counter < current; counter++) {//The reason we do counter < current is that current is the current position of writing to, empty
-					printf("%c", string[counter]);
-				}
+			if (display) {//if we want to display then we gotta do that real quick, so backspace and overwrite with blank temporarily, then backspace again to be over the blank space
+				printf("\b \b");
 			}
 
 		} else {//No backspace or enter, so just copy the data over
