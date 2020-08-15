@@ -112,3 +112,7 @@ char keyReader(GLFWwindow* window, int display);
 //Warning, will stay in function until enter is hit
 //Used to get typing input reliably, display displays it, nullterm keeps the \0 at the end of the string.
 void typing(GLFWwindow* window, int display, int nullterm, char* string);
+
+//Will stay in function until enter or the max limit has been hit, limit being the max number of characters in the string, beware of truncation if using nullterm
+//Used to get typing input reliably, display displays it, nullterm keeps the \0 at the end of the string.
+void typingLimited(GLFWwindow* window, int display, int nullterm, char* string, int limit);

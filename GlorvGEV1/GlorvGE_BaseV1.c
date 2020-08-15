@@ -353,3 +353,51 @@ void typing(GLFWwindow* window, int display, int nullterm, char* string) {
 		//returnText = realloc(returnText, sizeof(char) * current);//Give more memory
 	}
 }
+
+
+//Will stay in function until enter or the max limit has been hit, limit being the max number of characters in the string, beware of truncation if using nullterm
+//Used to get typing input reliably, display displays it, nullterm keeps the \0 at the end of the string.
+void typingLimited(GLFWwindow* window, int display, int nullterm, char* string, int limit) {
+	glfwPollEvents();
+	char typedchar;
+	unsigned int current = 0;//keep track of where we are in our array
+	handlingLastPress = 0;//Clear this just in case
+	while (1) {//While we dont have an enter press loop again and again
+		typedchar = keyReader(window, display);//get the next character
+		if (typedchar == '\0') {//if they hit enter it returns null term.
+			if (nullterm) {//We want the null term so copy this last character
+				string[current] = typedchar;
+				break;//then once we save it break out of the loop because we're done here
+			} else {//We dont want the null term so break before saving
+				break;
+			}
+		} else if (typedchar == 2) {//backspace, delete the last character
+			typedchar = 0;
+			current--;//Back up one
+			if (nullterm) {//If we want a nullterm to finish the string theres likely no problem in deleting a char with	this
+				string[current] = '\0';
+			} else {//If we dont want a nullterm then just set outright to null
+				string[current] = NULL;
+			}
+
+			if (display) {//if we want to display then we gotta do that real quick, so backspace and overwrite with blank temporarily, then backspace again to be over the blank space
+				printf("\b \b");
+			}
+
+		} else {//No backspace or enter, so just copy the data over
+			string[current] = typedchar;//copy the data over
+			current++;//keep track of where we are
+		}
+
+		if (nullterm) {//The limited portion, if we want a nullterm check and see if we are one off the last char that we want in the string
+			if (current == limit - 1) {//if we are, fill it with nullterm and then break
+				string[current] = '\0';
+				break;
+			}
+		} else if(current == limit){//Otherwise, are we at the limit?
+			break;//if so end
+		}
+
+
+	}//Effective end of function
+}

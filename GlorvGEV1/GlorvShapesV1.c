@@ -537,23 +537,8 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				processingClick = 0;
 
 				//FIND CLOSEST POINT TO CLICK
-				double* xy = calloc(2, sizeof(double));
-				glfwGetCursorPos(window, &xy[0], &xy[1]);
-
-				xy[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);
-				xy[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
-
-				float closestDistance = 100000;//Literally no way to get past this because ITS SUPPOSED TO BE -1 -> 1 CORDS
-
-				for (int counter = 0; counter < drawnshape.vertexcount; counter++) {//Run through each entry and find the distance storing the closest one and its position in the array.
-
-					double currentDistance = distanceTwoDD(drawnshape.vertices[counter * VERTEX_LENGTH], xy[0], drawnshape.vertices[(counter * VERTEX_LENGTH) + 1], xy[1]);//Find the current distance
-					if (currentDistance < closestDistance) {//If the current distance is so far the shortest, save it 
-						closestDistance = currentDistance;
-						closestPointNumber = counter;
-					}
-
-				}//End of tracking left click, we have a point  now
+				closestPointNumber = closestVert(&drawnshape, drawnshape.vertexcount, window);
+				//End of tracking left click, we have a point  now
 
 
 				//so now that we have a point, update its colour to the active colour
@@ -572,7 +557,6 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				glBufferSubData(GL_ARRAY_BUFFER, (closestPointNumber * VERTEX_SIZE) + (sizeof(float) * 3), 3 * sizeof(float), datashifter);//update opengl
 
 
-
 			//End of processing left click
 			} 
 			//Right click copies the nearest colour
@@ -588,7 +572,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				float tred = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 3];
 				float tgreen = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 4];
 				float tblue = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 5];
-				printf("Copied colour: %f, %f, %f.\n", tred, tgreen, tblue);
+				printf("Copied colour: %0.0f, %0.0f, %0.0f.\n", tred * 255, tgreen * 255, tblue * 255);
 				if (confirmationDialog(window, "Colour copied.\n\n", "Colour unchanged.\n\n")) {
 					red = tred;
 					green = tgreen;
@@ -612,62 +596,39 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				handlingLastPress = 0;
 
 				int twoFiftyFive = 0;//Declare our variables
-				int currentDigit = 0;
 				char numInput[3];
 
-				if(extendedConfirmationDialog(window, "\n","Colour unchanged.\n","What colour would you like?\n")){
+				if(extendedConfirmationDialog(window, "New colour: ","Colour unchanged.\n","Confirm colour change?\n")){
 
 					//GET RED
-					typing(window, 1, 0, numInput);
-					printf("\n");
-					//while (1) {//we break once we hit three (Basically a for loop)
-					//	numInput[currentDigit] = keyReader(window, 1);//get the next keypress
-					//	currentDigit++;//update this to keep storing everything
-					//	if (currentDigit == 3) {
-					//		break;
-					//	}
-					//}
+					typingLimited(window, 1, 0, numInput, 3);
+					printf("   ");//add some space
+
 					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
 							 //100s										10s									1s
-				
 					twoFiftyFive = (int) (((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
 					red = (float) twoFiftyFive / 255;//Then convert the int to a float and BOOM
 					//END OF GET RED
-
-					//printf("   ");//add some space
-					currentDigit = 0;//Reset this
-
+					
 					//GET GREEN
-					while (1) {//we break once we hit three (Basically a for loop)
-						numInput[currentDigit] = keyReader(window, 1);//get the next keypress
-						currentDigit++;//update this to keep storing everything
-						if (currentDigit == 3) {
-							break;
-						}
-					}
+					typingLimited(window, 1, 0, numInput, 3);
 					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
-							 //100s										10s									1s
+												 //100s										10s									1s
 					twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
 					green = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
 					//END OF GET GREEN
 
 					printf("   ");//add some space
-					currentDigit = 0;//Reset this
 					
 					//GET BLUE
-					while (1) {//we break once we hit three (Basically a for loop)
-						numInput[currentDigit] = keyReader(window, 1);//get the next keypress
-						currentDigit++;//update this to keep storing everything
-						if (currentDigit == 3) {
-							break;
-						}
-					}
+					typingLimited(window, 1, 0, numInput, 3);
 					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
-							 //100s										10s									1s
-
+													 //100s										10s									1s
 					twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
 					blue = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
 					//END OF GET BLUE
+
+
 				}//End of switching colour
 
 
