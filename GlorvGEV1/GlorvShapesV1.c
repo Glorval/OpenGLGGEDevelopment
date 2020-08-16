@@ -7,11 +7,13 @@
 #define VERTEX_LENGTH 6//The length of the vertices, 6 entries per,  x/y/z r/g/b
 #define VERTEX_SIZE VERTEX_LENGTH * sizeof(float)//The size in bytes of a vertex, currently 6 because x/y/z r/g/b
 
-#define EQFLOAT 0.0000001
 
-#define DEPTH_ADJUSTER 2000000//How much to divide user input by when making 2d objects and layering
 
-#define AdjustCharToArrayInt (int) '0' - 1
+const double DEPTH_ADJUSTER = 100000000000;//How much to divide user input by when making 2d objects and layering
+#define EQFLOAT 1/DEPTH_ADJUSTER
+
+
+const int  AdjustCharToArrayInt = '0' - 1;
 
 //Objects/
 //Vertices.txt
@@ -302,7 +304,6 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 	glPointSize(10.0f);//For the vertex rendering
 
 	//Variable stack
-
 	//OPTIONS
 		int drawVertices = 1;//whether to draw the endpoints as blocks
 		int AutoSelectLayers = 0;//Whether to automatically select newly created layers
@@ -405,10 +406,16 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 			//VERTEX DELETION
 			else if (processingClick == 2) {//Right click deletes vertices
 				processingClick = 0;//Reset the click
+				
+				if (!Confirmations) {
+					int vertToDelete = closestVert(&drawnshape, drawnshape.vertexcount, window);//Find the closest vertice to the click
+					deleteVertice(&drawnshape, vertToDelete, drawnshape.vertexcount, 1);
+				} else if (extendedConfirmationDialog(window, "Deleting vertex\n", "Vertex remains.\n", "Are you sure you want to delete the vertex?\n")){
+					int vertToDelete = closestVert(&drawnshape, drawnshape.vertexcount, window);//Find the closest vertice to the click
+					deleteVertice(&drawnshape, vertToDelete, drawnshape.vertexcount, 1);
+				}
 
-
-				int vertToDelete = closestVert(&drawnshape, drawnshape.vertexcount, window);//Find the closest vertice to the click
-				deleteVertice(&drawnshape, vertToDelete, drawnshape.vertexcount, 1);
+				
 				
 			//END OF VERTEX DELETION
 			}
@@ -527,7 +534,9 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				} 
 			else if (processingClick == 2) {//Right click. Disconnects all connections to the point
 					printf("Are you sure you wish to disconnect this point?\n");
-					if (confirmationDialog(window, "Disconnected.\n\n", "Cancled.\n\n")) {
+					if (!Confirmations) {
+						deleteIndice(&drawnshape, closestVert(&drawnshape, drawnshape.vertexcount, window));
+					}else	if (confirmationDialog(window, "Disconnected.\n\n", "Cancled.\n\n")) {
 						deleteIndice(&drawnshape, closestVert(&drawnshape, drawnshape.vertexcount, window));
 					}
 				}
@@ -576,15 +585,24 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				int vertToCopy = closestVert(&drawnshape, drawnshape.vertexcount, window);
 
 			
-				float tred = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 3];
-				float tgreen = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 4];
-				float tblue = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 5];
-				printf("Copied colour: %0.0f, %0.0f, %0.0f.\n", tred * 255, tgreen * 255, tblue * 255);
-				if (confirmationDialog(window, "Colour copied.\n\n", "Colour unchanged.\n\n")) {
-					red = tred;
-					green = tgreen;
-					blue = tblue;
+				
+				if (Confirmations) {
+					float tred = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 3];
+					float tgreen = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 4];
+					float tblue = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 5];
+					printf("Copied colour: %0.0f, %0.0f, %0.0f.\n", tred * 255, tgreen * 255, tblue * 255);
+					if (confirmationDialog(window, "Colour copied.\n\n", "Colour unchanged.\n\n")) {
+						red = tred;
+						green = tgreen;
+						blue = tblue;
+					}
+				}else{
+					red = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 3];
+					green = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 4];
+					blue = drawnshape.vertices[(vertToCopy * VERTEX_LENGTH) + 5];
+					printf("Copied colour: %0.0f, %0.0f, %0.0f.\n", red * 255, green * 255, blue * 255);
 				}
+				
 				
 
 			}//END OF RIGHT CLICK
@@ -605,7 +623,37 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				int twoFiftyFive = 0;//Declare our variables
 				char numInput[3];
 
-				if(extendedConfirmationDialog(window, "New colour: ","Colour unchanged.\n","Confirm colour change?\n")){
+				if (!Confirmations) {
+
+					//GET RED
+					typingLimited(window, 1, 0, numInput, 3);
+					printf("   ");//add some space
+
+					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+							 //100s										10s									1s
+					twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+					red = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
+					//END OF GET RED
+
+					//GET GREEN
+					typingLimited(window, 1, 0, numInput, 3);
+					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+												 //100s										10s									1s
+					twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+					green = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
+					//END OF GET GREEN
+
+					printf("   ");//add some space
+
+					//GET BLUE
+					typingLimited(window, 1, 0, numInput, 3);
+					//Now we have a string with numbers in it, convert to number numbers and store in red and BOOM, done.
+													 //100s										10s									1s
+					twoFiftyFive = (int)(((numInput[0] - '0') * 100) + ((numInput[1] - '0') * 10) + (numInput[2] - '0'));//Convert the three char string into an int
+					blue = (float)twoFiftyFive / 255;//Then convert the int to a float and BOOM
+					//END OF GET BLUE
+				}
+				else if(extendedConfirmationDialog(window, "New colour: ","Colour unchanged.\n","Confirm colour change?\n")){
 
 					//GET RED
 					typingLimited(window, 1, 0, numInput, 3);
@@ -658,46 +706,60 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 						break;
 					}
 				}
-
+				
 
 				if (layersRemain >= 0) {//We have at least one layer remaining
 
-					//NAMING THE LAYER
-					printf("What would you like to name this layer? 24 Character Max.   ");
+					int Confirmed = 0;
+					if (Confirmations) {
+						Confirmed = extendedConfirmationDialog(window, "What would you like to name this layer? 24 Character Max.   ", "Layer creation cancled.\n\n", "Are you sure you wish to create a new layer?\n");
+					} else {
+						printf("What would you like to name this layer ? 24 Character Max.   ");
+						Confirmed = 1;
+					}
 
-					userLayerNames[layersRemain].name = malloc(sizeof(char) * 25);//Give it some memory
-					typing(window, 1, 1, userLayerNames[layersRemain].name);//Get some typing input and save it to the name
-					printf("\n\n");//add some spacing
-					//END OF NAMING THE LAYER
+					//CREATE THE LAYER
+					if (Confirmed) {
+						userLayerNames[layersRemain].name = malloc(sizeof(char) * 25);//Give it some memory
+						typing(window, 1, 1, userLayerNames[layersRemain].name);//Get some typing input and save it to the name
+						printf("\n\n");//add some spacing
+						//END OF NAMING THE LAYER
 
 
-					printf("What depth would you like to make it? 0 - 9.    ");
+						printf("What depth would you like to make it? 0 - 9.    ");
 
-					while (1) {//while loop because we might get invalid depth from user
-						int validdepth = 1;//variable to see if we got a valid depth
+						while (1) {//while loop because we might get invalid depth from user
+							int validdepth = 1;//variable to see if we got a valid depth
 
-						userLayerNames[layersRemain].depth = (float)keyReader(window, 1) - '0';//Get the number the user inputs as a number rather than a character
-						userLayerNames[layersRemain].depth = userLayerNames[layersRemain].depth / DEPTH_ADJUSTER;//then adjust the number to get it really smol so as to not look 3d
+							userLayerNames[layersRemain].depth = (float)keyReader(window, 1) - '0';//Get the number the user inputs as a number rather than a character
+							printf("  ");//In case its not a valid number add some space
+							userLayerNames[layersRemain].depth = userLayerNames[layersRemain].depth / DEPTH_ADJUSTER;//then adjust the number to get it really smol so as to not look 3d
 
-						for (int counter = 0; counter < layersRemain; counter++) {//Run through all the other layers and see if one is already on this height
-							if (fabs(userLayerNames[layersRemain].depth - userLayerNames[counter].depth) < 0.000000000001) {//if any are on the height invalidate the run
-								validdepth = 0; 
-								printf("Not a valid layer height, already taken.\n");
-								break;//and break out of the for loop to save time
-								
+							for (int counter = 0; counter < layersRemain; counter++) {//Run through all the other layers and see if one is already on this height
+								if (fabs(userLayerNames[layersRemain].depth - userLayerNames[counter].depth) < 0.000000000001) {//if any are on the height invalidate the run
+									validdepth = 0;
+									printf("Not a valid layer height, already taken.\n");
+									break;//and break out of the for loop to save time
+
+								}
+							}
+							if (validdepth == 1) {
+								break;
 							}
 						}
-						if (validdepth == 1) {
-							break;
+						printf("\n\n");
+
+						if (AutoSelectLayers) {
+							currentLayer = layersRemain;
+							printf("Selected Layer: %s", userLayerNames[layersRemain].name);
 						}
 					}
-					
-
-					
+					//END OF CREATING THE LAYER
 
 
 
-				} else {
+				} 
+				else {
 					printf("No more layers remain.\n");
 				}
 
@@ -734,30 +796,40 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				handlingLastPress = 0;//Handled
 				int counter = 0;
 
-				printf("What layer would you like to select?\n");
-				while (userLayerNames[counter].name != NULL) {//Print the layers out
-					printf("%d) %s, depth %.0f\n", counter + 1, userLayerNames[counter].name, userLayerNames[counter].depth * DEPTH_ADJUSTER);
-					counter++;
+				int Confirmed = 0;
+				if (!Confirmations) {
+					Confirmed = 1;
+				} else if (extendedConfirmationDialog(window, "What layer would you like to select?\n", "Layer unchanged.\n", "Are you sure you wish to rename a layer?")) {
+					Confirmed = 1;
 				}
-
-				handlingLastPress = 0;//Make sure its clear
-				waitForKeyPress(window, 0);
-				//Now we have a number keypress to select it
-
-				currentLayer = (int)lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
-				printf("%d\n", currentLayer);
-				printf("Selected Layer: %s\n\n", userLayerNames[currentLayer].name);
-
 				
-				//RE-NAMING THE LAYER
-				printf("What would you like to re-name this layer to?   ");
-				typing(window, 1, 1, userLayerNames[currentLayer].name);
-				handlingLastPress = 0;//Handled
-				//END OF RE-NAMING THE LAYER
+				if (Confirmed) {
+					printf("What layer would you like to select?\n");
+					while (userLayerNames[counter].name != NULL) {//Print the layers out
+						printf("%d) %s, depth %.0f\n", counter + 1, userLayerNames[counter].name, userLayerNames[counter].depth * DEPTH_ADJUSTER);
+						counter++;
+					}
+
+					handlingLastPress = 0;//Make sure its clear
+					waitForKeyPress(window, 0);
+					//Now we have a number keypress to select it
+
+					currentLayer = (int)lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
+					printf("%d\n", currentLayer);
+					printf("Selected Layer: %s\n\n", userLayerNames[currentLayer].name);
+
+
+					//RE-NAMING THE LAYER
+					printf("What would you like to re-name this layer to?   ");
+					typing(window, 1, 1, userLayerNames[currentLayer].name);
+					handlingLastPress = 0;//Handled
+					//END OF RE-NAMING THE LAYER
 
 
 
-				//DO NOT re-height the layer
+					//DO NOT re-height the layer
+				}
+			
 
 				mode = VERT_CREATE;//Back out of menu now that we are done here.
 				printf("\nMode: Vertex Creation\n\n");
@@ -785,7 +857,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 					for (int current = 0; current < drawnshape.vertexcount; current++) {//Run through each vertice and see if we need to delete it
 
-						if (fabs(drawnshape.vertices[(current * VERTEX_LENGTH) + 2] - layerheight) < 0.0000001) {//Is this vertice on the correct z value to be on this layer?
+						if (fabs(drawnshape.vertices[(current * VERTEX_LENGTH) + 2] - layerheight) < EQFLOAT) {//Is this vertice on the correct z value to be on this layer?
 							//if so we need to delete it, but then also pull back current so as to not skip any vertices (Because if we delete it all vertices get shifted back 1
 							deleteVertice(&drawnshape, current, 0);
 							current--;

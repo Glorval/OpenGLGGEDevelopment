@@ -300,6 +300,8 @@ int confirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedM
 int extendedConfirmationDialog(GLFWwindow* window, char* confirmedMessage, char* failedMessage, char* initialMessage) {
 	printf("%s", initialMessage);
 	glfwSetKeyCallback(window, specialKeyDetector);
+	glfwPollEvents();
+	specialPress = 0;
 	processingClick = 0;
 	while (1) {
 		glfwPollEvents();
