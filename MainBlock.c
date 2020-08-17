@@ -46,7 +46,17 @@ int main()
     printf("Would you like to Load a shape to edit or make a New one?");
     char userInput = keyReader(window, 0);//get input dont display
     if (userInput == 'n') {
-        saveShapeToFile(drawShape(window, shaderProgram));//Get the new shape and save it immediately
+        drawShape(window, shaderProgram);//The drawshape saves within itself
+    } else if (userInput == 'l') {
+        char* filename = malloc(sizeof(char) * 25);
+        typingLimited(window, 1, 1, filename, 25);
+        struct ShapeData NewShape = createShapeFromFile(filename, 1);
+
+        glBindVertexArray(NewShape.VAO);
+        glDrawElements(GL_TRIANGLES, NewShape.indexcount, GL_UNSIGNED_INT, NewShape.indices);
+        glBindVertexArray(0);
+        glfwSwapBuffers(window);
+        waitForKeyPress(window, 1);
     }
 
 

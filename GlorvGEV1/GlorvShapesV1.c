@@ -9,11 +9,11 @@
 
 
 
-const double DEPTH_ADJUSTER = 100000000000;//How much to divide user input by when making 2d objects and layering
-#define EQFLOAT 1/DEPTH_ADJUSTER
+#define DEPTH_ADJUSTER  2000000//How much to divide user input by when making 2d objects and layering
+#define EQFLOAT 1/2000000
 
 
-const int  AdjustCharToArrayInt = '0' - 1;
+const int  AdjustCharToArrayInt = '0' + 1;
 
 //Objects/
 //Vertices.txt
@@ -779,11 +779,10 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 					counter++;
 				}
 
-				waitForKeyPress(window, 0);
-
+				char number = keyReader(window, 0);
 				//We have the selected layer now (Hopefully) so we can select it
-				currentLayer = (int) lastPressedKey - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
-				printf("Selected Layer: %s\n\n", userLayerNames[currentLayer].name);
+				currentLayer = number - AdjustCharToArrayInt;//Since we are selecting a layer, copy the key pressed (1 = 0, 2 = 1, etc) to the layer (0-9)
+				printf("Selected Layer: %s %d\n\n", userLayerNames[currentLayer].name, currentLayer);
 
 				mode = VERT_CREATE;//Back out of menu now that we are done here.
 				printf("\nMode: Vertex Creation\n\n");
