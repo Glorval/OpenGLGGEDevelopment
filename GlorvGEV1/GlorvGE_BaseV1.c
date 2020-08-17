@@ -375,7 +375,9 @@ void typingLimited(GLFWwindow* window, int display, int nullterm, char* string, 
 			}
 		} else if (typedchar == 2) {//backspace, delete the last character
 			typedchar = 0;
-			current--;//Back up one
+			if (current > 0) {//This is to check for INSTANT backspace
+				current--;//Back up one
+			}
 			if (nullterm) {//If we want a nullterm to finish the string theres likely no problem in deleting a char with	this
 				string[current] = '\0';
 			} else {//If we dont want a nullterm then just set outright to null

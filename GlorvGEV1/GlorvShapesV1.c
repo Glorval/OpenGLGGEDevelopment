@@ -721,7 +721,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 					//CREATE THE LAYER
 					if (Confirmed) {
 						userLayerNames[layersRemain].name = malloc(sizeof(char) * 25);//Give it some memory
-						typing(window, 1, 1, userLayerNames[layersRemain].name);//Get some typing input and save it to the name
+						typingLimited(window, 1, 1, userLayerNames[layersRemain].name, 25);//Get some typing input and save it to the name
 						printf("\n\n");//add some spacing
 						//END OF NAMING THE LAYER
 
@@ -820,7 +820,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 					//RE-NAMING THE LAYER
 					printf("What would you like to re-name this layer to?   ");
-					typing(window, 1, 1, userLayerNames[currentLayer].name);
+					typingLimited(window, 1, 1, userLayerNames[currentLayer].name,1);
 					handlingLastPress = 0;//Handled
 					//END OF RE-NAMING THE LAYER
 
@@ -930,7 +930,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				drawnshape.ShapeLayers = userLayerNames;//Copy the layer data over
 				printf("\nWhat would you like to name the object? Max 50 characters. ");
 				drawnshape.filename = malloc(sizeof(char)*51);
-				typing(window, 1, 1, drawnshape.filename);
+				typingLimited(window, 1, 1, drawnshape.filename,1);
 				saveShapeToFile(drawnshape);//Save it
 			} else {
 				printf("\nMode: Vertex Creation\n\n");
