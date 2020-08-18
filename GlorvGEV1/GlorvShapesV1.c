@@ -167,13 +167,6 @@ void saveRawShapeToFile(float vertices[], unsigned int indices, int vertSize, in
 //Saves given shape to filen, shape given by raw data.
 void saveShapeToFile(struct ShapeData savedata) {
 
-	//DEBUG REMOVE
-	for (int counter = 0; counter < savedata.vertexcount; counter++) {
-		for (int allsix = 0; allsix < 6; allsix++) {
-			printf("%0.2f, ", savedata.vertices[(counter * VERTEX_LENGTH) + allsix]);
-		}
-		printf("\n");
-	}
 
 
 	char vertFile[100] = "Objects/";//Get to the right directory
@@ -315,9 +308,10 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 	//Variable stack
 	//OPTIONS
 		int drawVertices = 1;//whether to draw the endpoints as blocks
-		int AutoSelectLayers = 0;//Whether to automatically select newly created layers
+		int AutoSelectLayers = 1;//Whether to automatically select newly created layers
 		int Confirmations = 1;//Whether to ask the user to confirm certain actions
-
+		int SnapToGrid = 0;
+		int GridSize = 10;
 	//END OF OPTIONS
 
 	
@@ -392,6 +386,11 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 				double xpos, ypos;//We had a click so get the x/y
 				glfwGetCursorPos(window, &xpos, &ypos);
+
+				if (SnapToGrid) {
+					xpos = xpos - (double)((int)xpos % GridSize);
+					ypos = ypos - (double)((int)ypos % GridSize);
+				}
 
 				drawnshape.vertices = realloc(drawnshape.vertices, drawnshape.vertexcount * VERTEX_SIZE);//give more memory in prep of storing the x/y forever, *6 is because 6 entries per vertice
 
@@ -481,7 +480,8 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 			//END OF LEFT CLICK
 
 			//START OF RIGHT CLICK
-			} else if (processingClick == 2) {//Right click stops the movement of the point
+			} 
+			else if (processingClick == 2) {//Right click stops the movement of the point
 				processingClick = 0;
 				selectedPoint = 0;//Deselects the point
 			}
@@ -496,9 +496,13 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 					glfwGetCursorPos(window, &xy[0], &xy[1]);//Get the x/y in pixles
 
 					float XY[2];
+					if (SnapToGrid) {
+						xy[0] = xy[0] - (double)((int)xy[0] % GridSize);
+						xy[1] = xy[1] - (double)((int)xy[1] % GridSize);
+					}
 					XY[0] = (xy[0] - (.5 * WINDOW_X)) / (.5 * WINDOW_X);//convert the double x/y in pixles to float x/y in graph
 					XY[1] = -(xy[1] - (.5 * WINDOW_Y)) / (.5 * WINDOW_Y);
-
+					
 					drawnshape.vertices[closestPointNumber/ sizeof(float)] = XY[0];//save in the shapedata
 					drawnshape.vertices[(closestPointNumber / sizeof(float)) + 1] = XY[1];
 
@@ -912,13 +916,24 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				handlingLastPress == 0;//As always reset this
 				mode = VERT_CREATE;//This is a oneoff lock in path that shouldnt be looped through
 
-				printf("1) Layers select upon creation. Currently %d\n2) Confirmations required to perform certain actions. Currently %d\n", AutoSelectLayers, Confirmations);
-
+				printf("1) Layers select upon creation. Currently %d\n", AutoSelectLayers);
+				printf("2) Confirmations required to perform certain actions. Currently %d\n", Confirmations);
+				printf("3) Snap to Grid. Currently %d\n", SnapToGrid);
+				printf("4) Grid Size. Currently %d\n", GridSize);
 				char action = keyReader(window, 0);
 				if (action == '1') {
 					AutoSelectLayers = !AutoSelectLayers;
 				} else if (action == '2') {
 					Confirmations = !Confirmations;
+				} else if (action == '3') {
+					SnapToGrid = !SnapToGrid;
+				} else if (action == '4') {
+					printf("What size would you like the grid to be?    ");
+					char newgridsize[2] = {0, 0};
+					typingLimited(window, 1, 0, &newgridsize, 2);
+					GridSize = ((newgridsize[0] - '0') * 10) + (newgridsize[1] - '0');
+					printf("\nNew grid size: %d\n", GridSize);
+
 				}
 				handlingLastPress = 0;//extra safety
 				
@@ -933,7 +948,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 		//S9 E1
 		else if (mode == END_OF_CREATION) {
-			mode == VERT_CREATE;
+			mode = VERT_CREATE;
 			printf("Are you sure you would like to end the shape creation? Y/N ");
 			char yesno = keyReader(window, 0);
 			if (yesno == 'y') {//We are ending the shape creation
@@ -945,7 +960,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 				return(drawnshape);
 			} else {
 				printf("\nMode: Vertex Creation\n\n");
-				mode == VERT_CREATE;
+				mode = VERT_CREATE;
 			}
 		}
 		//S9 E24
