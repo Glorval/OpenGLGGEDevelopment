@@ -48,6 +48,7 @@ int main()
     if (userInput == 'n') {
         drawShape(window, shaderProgram);//The drawshape saves within itself
     } else if (userInput == 'l') {
+        printf("\nWhat file would you like to load? Just type in the name of the object, not anything with Vertices or .txt     ");
         char* filename = malloc(sizeof(char) * 25);
         typingLimited(window, 1, 1, filename, 25);
         struct ShapeData NewShape = createShapeFromFile(filename, 1);
@@ -56,6 +57,7 @@ int main()
         glDrawElements(GL_TRIANGLES, NewShape.indexcount, GL_UNSIGNED_INT, NewShape.indices);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
+        printf("\nPress any key to exit.");
         waitForKeyPress(window, 1);
     }
 
