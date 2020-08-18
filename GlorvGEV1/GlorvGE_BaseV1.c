@@ -394,12 +394,12 @@ void typingLimited(GLFWwindow* window, int display, int nullterm, char* string, 
 		}
 
 		if (nullterm) {//The limited portion, if we want a nullterm check and see if we are one off the last char that we want in the string
-			if (current == limit - 1) {//if we are, fill it with nullterm and then break
+			if (current == limit - 1) {//if we are, fill it with nullterm and then end
 				string[current] = '\0';
-				break;
+				return;
 			}
 		} else if(current == limit){//Otherwise, are we at the limit?
-			break;//if so end
+			return;//if so end
 		}
 
 

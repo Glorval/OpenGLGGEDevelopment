@@ -167,12 +167,21 @@ void saveRawShapeToFile(float vertices[], unsigned int indices, int vertSize, in
 //Saves given shape to filen, shape given by raw data.
 void saveShapeToFile(struct ShapeData savedata) {
 
+	//DEBUG REMOVE
+	for (int counter = 0; counter < savedata.vertexcount; counter++) {
+		for (int allsix = 0; allsix < 6; allsix++) {
+			printf("%0.2f, ", savedata.vertices[(counter * VERTEX_LENGTH) + allsix]);
+		}
+		printf("\n");
+	}
+
+
 	char vertFile[100] = "Objects/";//Get to the right directory
 	strcat(vertFile, savedata.filename);//Put the name of the file as the folder name
 	strcat(vertFile, "Vertices.txt");//All vertice files are named this
 	FILE* vertSaveFile = fopen(vertFile, "w");//The place being written to is OurProgram/Objects/FilenameVertices.txt
-	for (int counter = 0; counter < savedata.vertexcount; counter++) {
-		fprintf(vertSaveFile, "%f", savedata.vertices[counter]);//FIX Make it print in sets of three
+	for (int counter = 0; counter < savedata.vertexcount * VERTEX_LENGTH; counter++) {
+		fprintf(vertSaveFile, "%f", savedata.vertices[counter]);//May the lack of the multiplication by vertex length never haunt this program again.
 		if (counter != savedata.vertexcount - 1) {//Add a space so long as this isnt the last element
 			fprintf(vertSaveFile, " ");
 		}
@@ -924,14 +933,16 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 		//S9 E1
 		else if (mode == END_OF_CREATION) {
+			mode == VERT_CREATE;
 			printf("Are you sure you would like to end the shape creation? Y/N ");
 			char yesno = keyReader(window, 0);
 			if (yesno == 'y') {//We are ending the shape creation
 				drawnshape.ShapeLayers = userLayerNames;//Copy the layer data over
 				printf("\nWhat would you like to name the object? Max 50 characters. ");
 				drawnshape.filename = malloc(sizeof(char)*51);
-				typingLimited(window, 1, 1, drawnshape.filename,1);
+				typingLimited(window, 1, 1, drawnshape.filename,51);
 				saveShapeToFile(drawnshape);//Save it
+				return(drawnshape);
 			} else {
 				printf("\nMode: Vertex Creation\n\n");
 				mode == VERT_CREATE;
@@ -942,9 +953,10 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 
 		//END OF MODES, ONTO UPDATES
 
-
+		//DRAWING
 		glEnable(GL_DEPTH_TEST);
-		if (drawnshape.vertexcount > 0) {//Make sure we have stuff to draw...
+		//Make sure we have stuff to draw...
+		if (drawnshape.vertexcount > 0) {
 			//Draw our new stuff
 			//glPointSize(10.0f);
 			glBindVertexArray(drawnshape.VAO);
@@ -961,7 +973,7 @@ struct ShapeData drawShape(GLFWwindow* window, int shaderID) {
 		glfwSwapBuffers(window);
 		glClearColor(0.0, 0.1, 0.9, 0.5);//clear the frame that was shown and just got pulled back
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		//END OF DRAWING
 
 
 

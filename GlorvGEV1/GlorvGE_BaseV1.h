@@ -36,7 +36,7 @@ struct ShaderStrings {
 //Used with creating shaps to keep track of VAO and VBO IDs
 struct ShapeData {
 	unsigned int VAO, VBO, EBO;//The vector buffer and vector array object IDs.
-	int vertexcount, indexcount;//The amount of vertices/length of indices
+	unsigned int vertexcount, indexcount;//The amount of vertices/length of indices
 	float* vertices;//An array of all the vertices in groups of 6, x y z, r,g,b
 	unsigned int* indices;//An array of which vertices to render in groups of 3, point a, point b, point c
 	int* fulldata;//whether or not it has all data used, VAOs/VBOs filename etc.
